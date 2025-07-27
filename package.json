@@ -1,0 +1,21 @@
+{
+  "name": "vihaan-swim-tracker",
+  "version": "1.0.0",
+  "description": "A comprehensive web application to track Vihaan's swimming journey, team progression, and event-specific performance",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "swimming",
+    "tracking",
+    "charts",
+    "sports",
+    "youth-sports"
+  ],
+  "author": "Vihaan's Family",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
