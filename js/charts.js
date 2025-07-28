@@ -183,13 +183,25 @@ function initializeTimelineChart() {
         return;
     }
 
+    // Destroy existing chart first
+    if (ganttChart && typeof ganttChart.destroy === 'function') {
+        ganttChart.destroy();
+        ganttChart = null;
+    }
+
     console.log('Creating timeline chart with team data:', teamData);
 
     try {
         // Create proper timeline with gaps
         const datasets = [];
         
+        if (!teamData || teamData.length === 0) {
+            console.error('No team data available');
+            return;
+        }
+        
         teamData.forEach((item, index) => {
+            console.log(`Adding team ${index}: ${item.team} from ${item.startDate} to ${item.endDate}`);
             datasets.push({
                 label: item.team,
                 data: [
@@ -207,6 +219,8 @@ function initializeTimelineChart() {
                 teamInfo: item
             });
         });
+
+        console.log('Timeline datasets created:', datasets.length);
 
         ganttChart = new Chart(ctx, {
             type: 'line',
@@ -778,6 +792,10 @@ function initializeUnifiedEventChart() {
 
         console.log('Event types found:', eventTypes);
 
+        // Get AI analysis once for all events
+        const aiAnalysis = analyzeSwimmingTrends();
+        console.log('AI Analysis:', aiAnalysis);
+
         eventTypes.forEach((eventType, index) => {
             const events = eventGroups[eventType]
                 .filter(e => timeToSeconds(e.time) !== null)
@@ -823,8 +841,9 @@ function initializeUnifiedEventChart() {
             });
 
             // Add AI target prediction line if available
-            const aiAnalysis = analyzeSwimmingTrends();
-            if (aiAnalysis.monthlyTargets[eventType] && events.length >= 2) {
+            if (aiAnalysis.monthlyTargets && aiAnalysis.monthlyTargets[eventType] && events.length >= 2) {
+                console.log(`Adding AI targets for ${eventType}:`, aiAnalysis.monthlyTargets[eventType]);
+                
                 const lastEvent = events[events.length - 1];
                 const targetData = [];
                 
@@ -842,21 +861,29 @@ function initializeUnifiedEventChart() {
                     });
                 });
 
+                console.log(`Target data for ${eventType}:`, targetData);
+
                 datasets.push({
                     label: `🎯 ${eventType} Target`,
                     data: targetData,
                     borderColor: colors[index % colors.length],
                     backgroundColor: 'transparent',
-                    borderWidth: 2,
+                    borderWidth: 3,
                     borderDash: [10, 5],
-                    pointRadius: 4,
+                    pointRadius: 6,
                     pointBackgroundColor: colors[index % colors.length],
                     pointBorderColor: '#fff',
-                    pointBorderWidth: 1,
+                    pointBorderWidth: 2,
                     fill: false,
                     tension: 0.2,
                     pointStyle: 'triangle',
                     legendColor: colors[index % colors.length]
+                });
+            } else {
+                console.log(`No AI targets available for ${eventType}`, {
+                    hasAnalysis: !!aiAnalysis.monthlyTargets,
+                    hasEventTargets: !!(aiAnalysis.monthlyTargets && aiAnalysis.monthlyTargets[eventType]),
+                    eventsLength: events.length
                 });
             }
         });
