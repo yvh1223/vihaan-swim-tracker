@@ -197,31 +197,39 @@ function initializeTimelineChart() {
             return;
         }
 
-        // Create a horizontal bar chart approach for better timeline visualization
+        // Create a proper Gantt chart showing actual timeline periods
         const labels = teamData.map(item => item.team);
         const colors = teamData.map((item, index) => `hsl(${index * 360 / teamData.length}, 70%, 60%)`);
         
-        // Calculate duration for each team in days
-        const data = teamData.map(item => {
+        // Convert dates to days since earliest start date for positioning
+        const allDates = teamData.flatMap(item => [new Date(item.startDate), new Date(item.endDate)]);
+        const minDate = new Date(Math.min(...allDates));
+        
+        console.log('Gantt chart base date:', minDate);
+        
+        // Create Gantt chart data: [start_position, end_position] for each team
+        const ganttData = teamData.map(item => {
             const start = new Date(item.startDate);
             const end = new Date(item.endDate);
-            const duration = (end - start) / (1000 * 60 * 60 * 24); // days
-            return duration;
+            const startDays = Math.floor((start - minDate) / (1000 * 60 * 60 * 24));
+            const endDays = Math.floor((end - minDate) / (1000 * 60 * 60 * 24));
+            
+            console.log(`${item.team}: ${item.startDate} to ${item.endDate} = ${startDays} to ${endDays} days`);
+            
+            return [startDays, endDays];
         });
-
-        console.log('Timeline data:', data);
-        console.log('Timeline labels:', labels);
 
         ganttChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Team Duration (Days)',
-                    data: data,
+                    label: 'Team Periods',
+                    data: ganttData.map(period => period[1] - period[0]), // Duration
                     backgroundColor: colors,
                     borderColor: colors.map(color => color.replace('60%', '50%')),
-                    borderWidth: 2
+                    borderWidth: 2,
+                    base: ganttData.map(period => period[0]) // Start positions
                 }]
             },
             options: {
@@ -230,7 +238,7 @@ function initializeTimelineChart() {
                 plugins: {
                     title: {
                         display: true,
-                        text: "Vihaan's Swimming Team Timeline & Duration",
+                        text: "Vihaan's Swimming Team Timeline (Gantt Chart)",
                         font: { size: 16 }
                     },
                     legend: {
@@ -250,11 +258,11 @@ function initializeTimelineChart() {
                                 const startMonth = start.getFullYear() * 12 + start.getMonth();
                                 const endMonth = end.getFullYear() * 12 + end.getMonth();
                                 const durationMonths = endMonth - startMonth + 1;
-                                const durationDays = Math.round(context.parsed.y);
                                 
                                 return [
                                     `Period: ${item.startDate} to ${item.endDate}`,
-                                    `Duration: ${durationMonths} months (${durationDays} days)`
+                                    `Duration: ${durationMonths} months`,
+                                    `Timeline: Shows when periods occurred`
                                 ];
                             }
                         }
@@ -265,13 +273,20 @@ function initializeTimelineChart() {
                     x: {
                         title: {
                             display: true,
-                            text: 'Duration (Days)'
+                            text: 'Timeline (Days since start of swimming journey)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                // Convert days back to approximate dates for display
+                                const date = new Date(minDate.getTime() + value * 24 * 60 * 60 * 1000);
+                                return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+                            }
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'Teams (Chronological Order)'
+                            text: 'Swimming Teams'
                         }
                     }
                 },
@@ -282,7 +297,7 @@ function initializeTimelineChart() {
                 },
                 animation: {
                     onComplete: function(animation) {
-                        // Add duration text on the bars
+                        // Add period dates on the Gantt bars
                         const chart = animation.chart;
                         const ctx = chart.ctx;
                         
@@ -290,7 +305,7 @@ function initializeTimelineChart() {
                             ctx.save();
                             ctx.textAlign = 'center';
                             ctx.fillStyle = 'white';
-                            ctx.font = 'bold 14px Arial';
+                            ctx.font = 'bold 11px Arial';
                             ctx.strokeStyle = 'black';
                             ctx.lineWidth = 1;
                             
@@ -299,7 +314,6 @@ function initializeTimelineChart() {
                                 const bar = meta.data[index];
                                 
                                 if (bar && bar.x && bar.y) {
-                                    // Calculate duration in months
                                     const item = teamData[index];
                                     const start = new Date(item.startDate);
                                     const end = new Date(item.endDate);
@@ -308,18 +322,19 @@ function initializeTimelineChart() {
                                     const duration = endMonth - startMonth + 1;
                                     
                                     // Position text in the middle of the bar
-                                    const x = bar.x - bar.width / 2 + 30;
+                                    const x = bar.x;
                                     const y = bar.y + 5;
                                     
-                                    // Draw text with stroke for better visibility
-                                    const text = `${duration}m`;
+                                    // Show duration and year
+                                    const year = start.getFullYear();
+                                    const text = `${duration}m (${year})`;
                                     ctx.strokeText(text, x, y);
                                     ctx.fillText(text, x, y);
                                 }
                             });
                             ctx.restore();
                         } catch (e) {
-                            console.log('Timeline annotation error (non-critical):', e);
+                            console.log('Gantt annotation error (non-critical):', e);
                         }
                     }
                 }
