@@ -225,11 +225,10 @@ function initializeTimelineChart() {
                 labels: labels,
                 datasets: [{
                     label: 'Team Periods',
-                    data: ganttData.map(period => period[1] - period[0]), // Duration
+                    data: ganttData.map(period => [period[0], period[1]]), // [start, end] floating bars
                     backgroundColor: colors,
                     borderColor: colors.map(color => color.replace('60%', '50%')),
-                    borderWidth: 2,
-                    base: ganttData.map(period => period[0]) // Start positions
+                    borderWidth: 2
                 }]
             },
             options: {
@@ -271,6 +270,7 @@ function initializeTimelineChart() {
                 indexAxis: 'y', // Horizontal bars
                 scales: {
                     x: {
+                        type: 'linear',
                         title: {
                             display: true,
                             text: 'Timeline (Days since start of swimming journey)'
