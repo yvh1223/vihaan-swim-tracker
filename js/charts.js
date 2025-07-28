@@ -225,14 +225,21 @@ function initializeTimelineChart() {
         // Create labels for x-axis
         const allDates = [...new Set(teamData.flatMap(item => [item.startDate, item.endDate]))].sort();
         
-        // Convert datasets to use indexed data points
-        const indexedDatasets = datasets.map(dataset => ({
-            ...dataset,
-            data: dataset.data.map(point => ({
-                x: allDates.indexOf(point.x),
-                y: point.y
-            }))
-        }));
+        // Convert datasets to use indexed data points but keep original Y values
+        const indexedDatasets = datasets.map((dataset, datasetIndex) => {
+            const newData = dataset.data.map(point => {
+                const xIndex = allDates.indexOf(point.x);
+                console.log(`Dataset ${datasetIndex} (${dataset.label}): x=${point.x} -> ${xIndex}, y=${point.y}`);
+                return {
+                    x: xIndex,
+                    y: point.y // Keep the original Y value (team index)
+                };
+            });
+            return {
+                ...dataset,
+                data: newData
+            };
+        });
 
         ganttChart = new Chart(ctx, {
             type: 'line',
@@ -300,7 +307,8 @@ function initializeTimelineChart() {
                             text: 'Team Level'
                         },
                         min: -0.5,
-                        max: teamData.length - 0.5
+                        max: teamData.length - 0.5,
+                        stepSize: 1
                     }
                 },
                 elements: {
