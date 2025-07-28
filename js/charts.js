@@ -222,10 +222,23 @@ function initializeTimelineChart() {
 
         console.log('Timeline datasets created:', datasets.length);
 
+        // Create labels for x-axis
+        const allDates = [...new Set(teamData.flatMap(item => [item.startDate, item.endDate]))].sort();
+        
+        // Convert datasets to use indexed data points
+        const indexedDatasets = datasets.map(dataset => ({
+            ...dataset,
+            data: dataset.data.map(point => ({
+                x: allDates.indexOf(point.x),
+                y: point.y
+            }))
+        }));
+
         ganttChart = new Chart(ctx, {
             type: 'line',
             data: {
-                datasets: datasets
+                labels: allDates,
+                datasets: indexedDatasets
             },
             options: {
                 responsive: true,
@@ -264,19 +277,12 @@ function initializeTimelineChart() {
                 },
                 scales: {
                     x: {
-                        type: 'time',
-                        time: {
-                            unit: 'month',
-                            displayFormats: {
-                                month: 'MMM YYYY'
-                            }
-                        },
                         title: {
                             display: true,
                             text: 'Timeline (Showing Swimming Periods Only)'
                         },
                         ticks: {
-                            maxTicksLimit: 12
+                            maxTicksLimit: 10
                         }
                     },
                     y: {
