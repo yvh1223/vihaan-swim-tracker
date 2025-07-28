@@ -25,6 +25,7 @@ function showTab(tabName) {
         } else if (tabName === 'events') {
             initializeFilterValues();
             initializeUnifiedEventChart();
+            initializeAITrendAnalysis();
         } else if (tabName === 'overview') {
             initializeOverviewChart();
         } else if (tabName === 'records') {

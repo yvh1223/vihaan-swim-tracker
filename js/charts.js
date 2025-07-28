@@ -186,25 +186,23 @@ function initializeTimelineChart() {
     console.log('Creating timeline chart with team data:', teamData);
 
     try {
-        // Create unique dates for timeline
-        const allDates = [];
-        teamData.forEach(item => {
-            allDates.push(item.startDate);
-            allDates.push(item.endDate);
-        });
-        const uniqueDates = [...new Set(allDates)].sort();
-        
         ganttChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: uniqueDates,
                 datasets: teamData.map((item, index) => {
-                    // Create data points for start and end dates
-                    const dataPoints = uniqueDates.map(date => {
-                        if (date >= item.startDate && date <= item.endDate) {
-                            return index;
-                        }
-                        return null;
+                    // Create data points only for actual start and end dates (not spanning gaps)
+                    const dataPoints = [];
+                    
+                    // Add start point
+                    dataPoints.push({
+                        x: item.startDate,
+                        y: index
+                    });
+                    
+                    // Add end point
+                    dataPoints.push({
+                        x: item.endDate,
+                        y: index
                     });
                     
                     return {
@@ -213,8 +211,8 @@ function initializeTimelineChart() {
                         borderColor: `hsl(${index * 360 / teamData.length}, 70%, 60%)`,
                         backgroundColor: `hsl(${index * 360 / teamData.length}, 70%, 60%)`,
                         borderWidth: 8,
-                        pointRadius: 6,
-                        pointHoverRadius: 8,
+                        pointRadius: 8,
+                        pointHoverRadius: 10,
                         showLine: true,
                         tension: 0,
                         fill: false,
@@ -260,12 +258,19 @@ function initializeTimelineChart() {
                 },
                 scales: {
                     x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month',
+                            displayFormats: {
+                                month: 'MMM YYYY'
+                            }
+                        },
                         title: {
                             display: true,
-                            text: 'Timeline'
+                            text: 'Timeline (Showing Swimming Periods Only)'
                         },
                         ticks: {
-                            maxTicksLimit: 8
+                            maxTicksLimit: 12
                         }
                     },
                     y: {
@@ -1307,4 +1312,88 @@ function initializeImprovementAnalytics() {
         
         container.appendChild(card);
     });
+}
+
+// Initialize AI trend analysis
+function initializeAITrendAnalysis() {
+    const container = document.getElementById('aiTrendAnalysis');
+    if (!container) return;
+
+    try {
+        const analysis = analyzeSwimmingTrends();
+        
+        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">';
+        
+        // Event Analysis Summary
+        html += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">';
+        html += '<h4 style="margin-top: 0; font-size: 1.1em;">📊 Performance Analysis</h4>';
+        
+        Object.keys(analysis.eventAnalysis).forEach(event => {
+            const data = analysis.eventAnalysis[event];
+            const trendIcon = data.trend === 'improving' ? '📈' : '📊';
+            const confidenceColor = data.confidence === 'high' ? '#28a745' : '#ffc107';
+            
+            html += `
+                <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 5px;">
+                    <div style="font-weight: bold; font-size: 0.9em;">${trendIcon} ${event}</div>
+                    <div style="font-size: 0.8em; opacity: 0.9;">
+                        Improved: ${data.totalImprovement} (${data.improvementPercent}%)
+                        <br>Rate: ${data.monthlyRate}/month
+                        <span style="color: ${confidenceColor}; margin-left: 10px;">●</span> ${data.confidence} confidence
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        // Monthly Targets
+        html += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">';
+        html += '<h4 style="margin-top: 0; font-size: 1.1em;">🎯 6-Month Targets</h4>';
+        
+        // Show targets for the most practiced event
+        const mostPracticedEvent = Object.keys(analysis.monthlyTargets)[0];
+        if (mostPracticedEvent && analysis.monthlyTargets[mostPracticedEvent]) {
+            html += `<div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">${mostPracticedEvent}</div>`;
+            
+            analysis.monthlyTargets[mostPracticedEvent].slice(0, 3).forEach((target, index) => {
+                const monthName = new Date(target.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                html += `
+                    <div style="margin-bottom: 8px; padding: 6px; background: rgba(255,255,255,0.05); border-radius: 4px; font-size: 0.8em;">
+                        ${monthName}: <strong>${target.targetTime}</strong>
+                        <span style="opacity: 0.8;">(improve by ${target.improvementNeeded})</span>
+                    </div>
+                `;
+            });
+        }
+        html += '</div>';
+        
+        html += '</div>';
+        
+        // Recommendations
+        if (analysis.recommendations.length > 0) {
+            html += '<div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">';
+            html += '<h4 style="margin-top: 0; font-size: 1.1em;">💡 AI Recommendations</h4>';
+            
+            analysis.recommendations.forEach(rec => {
+                const typeIcons = {
+                    'maintain': '✅',
+                    'focus': '⚠️',
+                    'excellent': '🏆',
+                    'review': '🔍'
+                };
+                
+                html += `
+                    <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; font-size: 0.85em;">
+                        <strong>${typeIcons[rec.type]} ${rec.event}:</strong> ${rec.message}
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error generating AI trend analysis:', error);
+        container.innerHTML = '<p style="font-size: 0.9em; opacity: 0.8;">AI analysis temporarily unavailable</p>';
+    }
 }

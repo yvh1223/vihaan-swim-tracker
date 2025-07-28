@@ -176,3 +176,102 @@ function calculateImprovements() {
     
     return improvements;
 }
+
+// AI-powered trend analysis and target prediction
+function analyzeSwimmingTrends() {
+    const analysis = {
+        eventAnalysis: {},
+        monthlyTargets: {},
+        recommendations: []
+    };
+    
+    // Group events by type for trend analysis
+    const eventGroups = {};
+    eventData.forEach(event => {
+        if (!eventGroups[event.event]) {
+            eventGroups[event.event] = [];
+        }
+        eventGroups[event.event].push(event);
+    });
+    
+    // Analyze each event type
+    Object.keys(eventGroups).forEach(eventType => {
+        const events = eventGroups[eventType]
+            .filter(e => timeToSeconds(e.time) !== null)
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+        if (events.length >= 2) {
+            const firstTime = timeToSeconds(events[0].time);
+            const lastTime = timeToSeconds(events[events.length - 1].time);
+            const improvement = firstTime - lastTime;
+            const timeSpan = (new Date(events[events.length - 1].date) - new Date(events[0].date)) / (1000 * 60 * 60 * 24 * 30); // months
+            
+            // Calculate improvement rate per month
+            const monthlyImprovementRate = improvement / timeSpan;
+            
+            // Predict future targets (next 6 months)
+            const currentTime = lastTime;
+            const targets = [];
+            
+            for (let month = 1; month <= 6; month++) {
+                const targetTime = Math.max(currentTime - (monthlyImprovementRate * month * 0.8), currentTime * 0.85); // Conservative estimate
+                targets.push({
+                    month: new Date(Date.now() + month * 30 * 24 * 60 * 60 * 1000).toISOString().substr(0, 7),
+                    targetTime: secondsToTimeString(targetTime),
+                    improvementNeeded: secondsToTimeString(currentTime - targetTime)
+                });
+            }
+            
+            // Generate event-specific recommendations
+            const recentImprovement = improvement > 0;
+            const improvementPercent = (improvement / firstTime) * 100;
+            
+            analysis.eventAnalysis[eventType] = {
+                totalImprovement: secondsToTimeString(improvement),
+                improvementPercent: improvementPercent.toFixed(1),
+                monthlyRate: secondsToTimeString(Math.abs(monthlyImprovementRate)),
+                trend: recentImprovement ? 'improving' : 'stable',
+                confidence: events.length >= 4 ? 'high' : 'medium'
+            };
+            
+            analysis.monthlyTargets[eventType] = targets;
+            
+            // Generate recommendations based on performance
+            if (improvementPercent > 5) {
+                analysis.recommendations.push({
+                    event: eventType,
+                    type: 'maintain',
+                    message: `Excellent progress in ${eventType}! Focus on technique refinement and consistency.`
+                });
+            } else if (improvementPercent < 2 && events.length >= 3) {
+                analysis.recommendations.push({
+                    event: eventType,
+                    type: 'focus',
+                    message: `${eventType} needs attention. Consider targeted drills and stroke technique work.`
+                });
+            }
+        }
+    });
+    
+    // General recommendations based on overall performance
+    const totalEvents = Object.keys(eventGroups).length;
+    const improvingEvents = Object.keys(analysis.eventAnalysis).filter(
+        event => analysis.eventAnalysis[event].trend === 'improving'
+    ).length;
+    
+    if (improvingEvents / totalEvents > 0.7) {
+        analysis.recommendations.push({
+            event: 'Overall',
+            type: 'excellent',
+            message: 'Outstanding overall improvement! Continue current training regimen and consider advancing to more competitive events.'
+        });
+    } else if (improvingEvents / totalEvents < 0.3) {
+        analysis.recommendations.push({
+            event: 'Overall',
+            type: 'review',
+            message: 'Consider reviewing training approach. Focus on fundamental techniques and gradual progression.'
+        });
+    }
+    
+    return analysis;
+}
