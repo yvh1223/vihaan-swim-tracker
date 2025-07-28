@@ -186,40 +186,32 @@ function initializeTimelineChart() {
     console.log('Creating timeline chart with team data:', teamData);
 
     try {
+        // Create proper timeline with gaps
+        const datasets = [];
+        
+        teamData.forEach((item, index) => {
+            datasets.push({
+                label: item.team,
+                data: [
+                    { x: item.startDate, y: index },
+                    { x: item.endDate, y: index }
+                ],
+                borderColor: `hsl(${index * 360 / teamData.length}, 70%, 60%)`,
+                backgroundColor: `hsl(${index * 360 / teamData.length}, 70%, 60%)`,
+                borderWidth: 8,
+                pointRadius: 8,
+                pointHoverRadius: 10,
+                showLine: true,
+                tension: 0,
+                fill: false,
+                teamInfo: item
+            });
+        });
+
         ganttChart = new Chart(ctx, {
             type: 'line',
             data: {
-                datasets: teamData.map((item, index) => {
-                    // Create data points only for actual start and end dates (not spanning gaps)
-                    const dataPoints = [];
-                    
-                    // Add start point
-                    dataPoints.push({
-                        x: item.startDate,
-                        y: index
-                    });
-                    
-                    // Add end point
-                    dataPoints.push({
-                        x: item.endDate,
-                        y: index
-                    });
-                    
-                    return {
-                        label: item.team.length > 25 ? item.team.substring(0, 22) + '...' : item.team,
-                        data: dataPoints,
-                        borderColor: `hsl(${index * 360 / teamData.length}, 70%, 60%)`,
-                        backgroundColor: `hsl(${index * 360 / teamData.length}, 70%, 60%)`,
-                        borderWidth: 8,
-                        pointRadius: 8,
-                        pointHoverRadius: 10,
-                        showLine: true,
-                        tension: 0,
-                        fill: false,
-                        spanGaps: false,
-                        teamInfo: item
-                    };
-                })
+                datasets: datasets
             },
             options: {
                 responsive: true,
@@ -829,6 +821,44 @@ function initializeUnifiedEventChart() {
                 // Fix legend color by setting it explicitly
                 legendColor: colors[index % colors.length]
             });
+
+            // Add AI target prediction line if available
+            const aiAnalysis = analyzeSwimmingTrends();
+            if (aiAnalysis.monthlyTargets[eventType] && events.length >= 2) {
+                const lastEvent = events[events.length - 1];
+                const targetData = [];
+                
+                // Start from last actual performance
+                targetData.push({
+                    x: lastEvent.date,
+                    y: timeToSeconds(lastEvent.time)
+                });
+                
+                // Add target points for next 6 months
+                aiAnalysis.monthlyTargets[eventType].slice(0, 6).forEach(target => {
+                    targetData.push({
+                        x: target.month + '-15', // Mid-month
+                        y: timeToSeconds(target.targetTime)
+                    });
+                });
+
+                datasets.push({
+                    label: `🎯 ${eventType} Target`,
+                    data: targetData,
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 4,
+                    pointBackgroundColor: colors[index % colors.length],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
+                    fill: false,
+                    tension: 0.2,
+                    pointStyle: 'triangle',
+                    legendColor: colors[index % colors.length]
+                });
+            }
         });
 
         console.log('Creating chart with', datasets.length, 'datasets');
