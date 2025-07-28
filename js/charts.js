@@ -192,60 +192,37 @@ function initializeTimelineChart() {
     console.log('Creating timeline chart with team data:', teamData);
 
     try {
-        // Create proper timeline with gaps
-        const datasets = [];
-        
         if (!teamData || teamData.length === 0) {
             console.error('No team data available');
             return;
         }
+
+        // Create a horizontal bar chart approach for better timeline visualization
+        const labels = teamData.map(item => item.team);
+        const colors = teamData.map((item, index) => `hsl(${index * 360 / teamData.length}, 70%, 60%)`);
         
-        teamData.forEach((item, index) => {
-            console.log(`Adding team ${index}: ${item.team} from ${item.startDate} to ${item.endDate}`);
-            datasets.push({
-                label: item.team,
-                data: [
-                    { x: item.startDate, y: index },
-                    { x: item.endDate, y: index }
-                ],
-                borderColor: `hsl(${index * 360 / teamData.length}, 70%, 60%)`,
-                backgroundColor: `hsl(${index * 360 / teamData.length}, 70%, 60%)`,
-                borderWidth: 8,
-                pointRadius: 8,
-                pointHoverRadius: 10,
-                showLine: true,
-                tension: 0,
-                fill: false,
-                teamInfo: item
-            });
+        // Calculate duration for each team in days
+        const data = teamData.map(item => {
+            const start = new Date(item.startDate);
+            const end = new Date(item.endDate);
+            const duration = (end - start) / (1000 * 60 * 60 * 24); // days
+            return duration;
         });
 
-        console.log('Timeline datasets created:', datasets.length);
-
-        // Create labels for x-axis
-        const allDates = [...new Set(teamData.flatMap(item => [item.startDate, item.endDate]))].sort();
-        
-        // Convert datasets to use indexed data points but keep original Y values
-        const indexedDatasets = datasets.map((dataset, datasetIndex) => {
-            const newData = dataset.data.map(point => {
-                const xIndex = allDates.indexOf(point.x);
-                console.log(`Dataset ${datasetIndex} (${dataset.label}): x=${point.x} -> ${xIndex}, y=${point.y}`);
-                return {
-                    x: xIndex,
-                    y: point.y // Keep the original Y value (team index)
-                };
-            });
-            return {
-                ...dataset,
-                data: newData
-            };
-        });
+        console.log('Timeline data:', data);
+        console.log('Timeline labels:', labels);
 
         ganttChart = new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
-                labels: allDates,
-                datasets: indexedDatasets
+                labels: labels,
+                datasets: [{
+                    label: 'Team Duration (Days)',
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: colors.map(color => color.replace('60%', '50%')),
+                    borderWidth: 2
+                }]
             },
             options: {
                 responsive: true,
@@ -253,7 +230,7 @@ function initializeTimelineChart() {
                 plugins: {
                     title: {
                         display: true,
-                        text: "Vihaan's Swimming Team Timeline",
+                        text: "Vihaan's Swimming Team Timeline & Duration",
                         font: { size: 16 }
                     },
                     legend: {
@@ -262,53 +239,40 @@ function initializeTimelineChart() {
                     tooltip: {
                         callbacks: {
                             title: function(context) {
-                                const datasetIndex = context[0].datasetIndex;
-                                return teamData[datasetIndex].team;
+                                const index = context[0].dataIndex;
+                                return teamData[index].team;
                             },
                             label: function(context) {
-                                const datasetIndex = context.datasetIndex;
-                                const item = teamData[datasetIndex];
+                                const index = context.dataIndex;
+                                const item = teamData[index];
                                 const start = new Date(item.startDate);
                                 const end = new Date(item.endDate);
                                 const startMonth = start.getFullYear() * 12 + start.getMonth();
                                 const endMonth = end.getFullYear() * 12 + end.getMonth();
-                                const duration = endMonth - startMonth + 1;
+                                const durationMonths = endMonth - startMonth + 1;
+                                const durationDays = Math.round(context.parsed.y);
                                 
                                 return [
                                     `Period: ${item.startDate} to ${item.endDate}`,
-                                    `Duration: ${duration} months`
+                                    `Duration: ${durationMonths} months (${durationDays} days)`
                                 ];
                             }
                         }
                     }
                 },
+                indexAxis: 'y', // Horizontal bars
                 scales: {
                     x: {
                         title: {
                             display: true,
-                            text: 'Timeline (Showing Swimming Periods Only)'
-                        },
-                        ticks: {
-                            maxTicksLimit: 10
+                            text: 'Duration (Days)'
                         }
                     },
                     y: {
-                        type: 'linear',
-                        position: 'left',
-                        ticks: {
-                            callback: function(value, index) {
-                                const teamName = teamData[value]?.team || '';
-                                return teamName.length > 20 ? teamName.substring(0, 17) + '...' : teamName;
-                            },
-                            stepSize: 1
-                        },
                         title: {
                             display: true,
-                            text: 'Team Level'
-                        },
-                        min: -0.5,
-                        max: teamData.length - 0.5,
-                        stepSize: 1
+                            text: 'Teams (Chronological Order)'
+                        }
                     }
                 },
                 elements: {
@@ -318,138 +282,44 @@ function initializeTimelineChart() {
                 },
                 animation: {
                     onComplete: function(animation) {
-                        // Add team names on the timeline
+                        // Add duration text on the bars
                         const chart = animation.chart;
                         const ctx = chart.ctx;
                         
                         try {
                             ctx.save();
-                            ctx.font = 'bold 11px Arial';
-                            ctx.strokeStyle = 'white';
-                            ctx.lineWidth = 3;
-                            ctx.textAlign = 'left';
+                            ctx.textAlign = 'center';
+                            ctx.fillStyle = 'white';
+                            ctx.font = 'bold 14px Arial';
+                            ctx.strokeStyle = 'black';
+                            ctx.lineWidth = 1;
                             
-                            // Create a grid-based positioning system to prevent overlaps
-                            const usedPositions = [];
-                            const labelHeight = 20;
-                            const minSpacing = 25;
-                            
-                            // Sort datasets by their Y position (team level) to process them in order
-                            const sortedDatasets = chart.data.datasets.map((dataset, index) => ({
-                                dataset,
-                                index,
-                                item: teamData[index],
-                                meta: chart.getDatasetMeta(index)
-                            })).sort((a, b) => {
-                                // Sort by the team level (Y position)
-                                return a.index - b.index;
-                            });
-                            
-                            sortedDatasets.forEach(({dataset, index, item, meta}) => {
-                                // Find the actual visible line segment for this team
-                                const validPoints = meta.data.filter(point => point && point.x !== undefined && point.y !== undefined && point.skip !== true);
+                            chart.data.datasets[0].data.forEach((value, index) => {
+                                const meta = chart.getDatasetMeta(0);
+                                const bar = meta.data[index];
                                 
-                                if (validPoints.length > 0) {
-                                    // Find the middle of the actual visible line segment
-                                    const midIndex = Math.floor(validPoints.length / 2);
-                                    const midPoint = validPoints[midIndex];
-                                    
+                                if (bar && bar.x && bar.y) {
                                     // Calculate duration in months
+                                    const item = teamData[index];
                                     const start = new Date(item.startDate);
                                     const end = new Date(item.endDate);
                                     const startMonth = start.getFullYear() * 12 + start.getMonth();
                                     const endMonth = end.getFullYear() * 12 + end.getMonth();
                                     const duration = endMonth - startMonth + 1;
                                     
-                                    // Create label with team name and duration
-                                    const labelText = `${item.team} (${duration}m)`;
+                                    // Position text in the middle of the bar
+                                    const x = bar.x - bar.width / 2 + 30;
+                                    const y = bar.y + 5;
                                     
-                                    // Calculate ideal position - above the middle of the line segment
-                                    const textWidth = ctx.measureText(labelText).width;
-                                    let idealX = midPoint.x - (textWidth / 2); // Center the text over the line
-                                    let idealY = midPoint.y - 25; // Position above the line
-                                    
-                                    // Ensure label stays within chart bounds
-                                    idealX = Math.min(idealX, chart.width - textWidth - 20);
-                                    idealX = Math.max(idealX, 10);
-                                    idealY = Math.max(idealY, 25);
-                                    idealY = Math.min(idealY, chart.height - 25);
-                                    
-                                    // Find the best available position using a grid approach
-                                    let bestX = idealX;
-                                    let bestY = idealY;
-                                    let foundPosition = false;
-                                    
-                                    // Try positions in a spiral pattern around the ideal position
-                                    for (let yOffset = 0; yOffset <= 200 && !foundPosition; yOffset += minSpacing) {
-                                        for (let direction of [0, 1]) { // 0 = above, 1 = below
-                                            let testY = direction === 0 ? idealY - yOffset : idealY + yOffset;
-                                            
-                                            // Keep within chart bounds
-                                            if (testY < 25 || testY > chart.height - 25) continue;
-                                            
-                                            for (let xOffset = 0; xOffset <= 150 && !foundPosition; xOffset += 20) {
-                                                for (let xDir of [0, 1]) { // 0 = left, 1 = right
-                                                    let testX = xDir === 0 ? idealX - xOffset : idealX + xOffset;
-                                                    
-                                                    // Keep within chart bounds
-                                                    if (testX < 10 || testX + textWidth > chart.width - 10) continue;
-                                                    
-                                                    // Check if this position overlaps with existing labels
-                                                    let hasOverlap = false;
-                                                    for (let pos of usedPositions) {
-                                                        if (Math.abs(pos.x - testX) < textWidth + 10 && 
-                                                            Math.abs(pos.y - testY) < labelHeight) {
-                                                            hasOverlap = true;
-                                                            break;
-                                                        }
-                                                    }
-                                                    
-                                                    if (!hasOverlap) {
-                                                        bestX = testX;
-                                                        bestY = testY;
-                                                        foundPosition = true;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    
-                                    // Record this position as used
-                                    usedPositions.push({ x: bestX, y: bestY, width: textWidth, height: labelHeight });
-                                    
-                                    // Create a background rectangle for better readability
-                                    const padding = 4;
-                                    
-                                    // Draw semi-transparent background
-                                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                                    ctx.fillRect(bestX - padding, bestY - 12, textWidth + (padding * 2), 16);
-                                    
-                                    // Draw border around background
-                                    ctx.strokeStyle = dataset.borderColor;
-                                    ctx.lineWidth = 1.5;
-                                    ctx.strokeRect(bestX - padding, bestY - 12, textWidth + (padding * 2), 16);
-                                    
-                                    // Draw the text
-                                    ctx.fillStyle = dataset.borderColor;
-                                    ctx.font = 'bold 11px Arial';
-                                    ctx.fillText(labelText, bestX, bestY);
-                                    
-                                    // Draw a connecting line from the label to the middle of the timeline segment
-                                    ctx.strokeStyle = dataset.borderColor;
-                                    ctx.lineWidth = 1;
-                                    ctx.setLineDash([2, 2]);
-                                    ctx.beginPath();
-                                    ctx.moveTo(bestX + textWidth/2, bestY + 4);
-                                    ctx.lineTo(midPoint.x, midPoint.y);
-                                    ctx.stroke();
-                                    ctx.setLineDash([]);
+                                    // Draw text with stroke for better visibility
+                                    const text = `${duration}m`;
+                                    ctx.strokeText(text, x, y);
+                                    ctx.fillText(text, x, y);
                                 }
                             });
                             ctx.restore();
                         } catch (e) {
-                            console.log('Timeline label error (non-critical):', e);
+                            console.log('Timeline annotation error (non-critical):', e);
                         }
                     }
                 }
