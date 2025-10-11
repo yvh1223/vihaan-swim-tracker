@@ -553,10 +553,13 @@ function initializeEventCharts() {
                 const timelineData = generateTimelineWithPredictions(eventType);
                 const allDates = [...validEvents.map(e => e.date), ...timelineData.predictions.map(p => p.date)];
 
+                // Create combined timeline with all dates
+                const combinedTimeline = [...validEvents.map(e => e.date), ...timelineData.predictions.map(p => p.date)];
+
                 // Prepare datasets
                 const datasets = [{
                     label: 'Actual Times',
-                    data: validTimes,
+                    data: [...validTimes, ...Array(timelineData.predictions.length).fill(null)],
                     borderColor: '#2a5298',
                     backgroundColor: 'rgba(42, 82, 152, 0.1)',
                     borderWidth: 3,
@@ -568,17 +571,22 @@ function initializeEventCharts() {
                             case 'B': return '#007bff';
                             default: return '#dc3545';
                         }
-                    }),
+                    }).concat(Array(timelineData.predictions.length).fill('transparent')),
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
-                    pointRadius: 6
+                    pointRadius: [... validTimes.map(() => 6), ...Array(timelineData.predictions.length).fill(0)],
+                    spanGaps: false
                 }];
 
                 // Add prediction line if available
                 if (timelineData.predictions.length > 0) {
+                    const predictionData = Array(validTimes.length - 1).fill(null);
+                    predictionData.push(validTimes[validTimes.length - 1]); // Connect to last actual point
+                    timelineData.predictions.forEach(p => predictionData.push(p.time));
+
                     datasets.push({
                         label: 'Predicted Times',
-                        data: Array(validTimes.length - 1).fill(null).concat([validTimes[validTimes.length - 1]], timelineData.predictions.map(p => p.time)),
+                        data: predictionData,
                         borderColor: '#ffc107',
                         backgroundColor: 'transparent',
                         borderWidth: 2,
@@ -589,66 +597,117 @@ function initializeEventCharts() {
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2,
                         pointRadius: 4,
-                        pointStyle: 'triangle'
+                        pointStyle: 'triangle',
+                        spanGaps: false
                     });
                 }
 
-                // Add time standard lines (horizontal reference lines)
-                const eventStandards = getTimeStandardForDate(eventType, validEvents[validEvents.length - 1].date);
-                if (eventStandards) {
-                    const lineColor = validEvents[0].event.includes(eventType) ? '#2a5298' : '#666';
-
-                    // Add BB standard line
-                    datasets.push({
-                        label: 'BB Standard',
-                        data: allDates.map(() => eventStandards.BB),
-                        borderColor: 'rgba(40, 167, 69, 0.6)',
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        borderDash: [10, 5],
-                        fill: false,
-                        pointRadius: 0,
-                        tension: 0
+                // Add time standard lines (horizontal reference lines) - 10&U standards
+                const eventStandards10U = getTimeStandardForDate(eventType, validEvents[0].date);
+                if (eventStandards10U) {
+                    // Create standard line data for all dates
+                    const standardDataBB = combinedTimeline.map(date => {
+                        return new Date(date) < new Date('2026-01-01') ? eventStandards10U.BB : null;
+                    });
+                    const standardDataB = combinedTimeline.map(date => {
+                        return new Date(date) < new Date('2026-01-01') ? eventStandards10U.B : null;
+                    });
+                    const standardDataA = combinedTimeline.map(date => {
+                        return new Date(date) < new Date('2026-01-01') ? eventStandards10U.A : null;
                     });
 
-                    // Add B standard line
+                    // Add 10&U BB standard line
                     datasets.push({
-                        label: 'B Standard',
-                        data: allDates.map(() => eventStandards.B),
-                        borderColor: 'rgba(0, 123, 255, 0.6)',
+                        label: '10&U BB',
+                        data: standardDataBB,
+                        borderColor: 'rgba(40, 167, 69, 0.7)',
                         backgroundColor: 'transparent',
                         borderWidth: 2,
                         borderDash: [10, 5],
                         fill: false,
                         pointRadius: 0,
-                        tension: 0
+                        tension: 0,
+                        spanGaps: false
                     });
 
-                    // Add A standard line
+                    // Add 10&U B standard line
                     datasets.push({
-                        label: 'A Standard',
-                        data: allDates.map(() => eventStandards.A),
-                        borderColor: 'rgba(255, 193, 7, 0.6)',
+                        label: '10&U B',
+                        data: standardDataB,
+                        borderColor: 'rgba(0, 123, 255, 0.7)',
                         backgroundColor: 'transparent',
                         borderWidth: 2,
                         borderDash: [10, 5],
                         fill: false,
                         pointRadius: 0,
-                        tension: 0
+                        tension: 0,
+                        spanGaps: false
+                    });
+
+                    // Add 10&U A standard line
+                    datasets.push({
+                        label: '10&U A',
+                        data: standardDataA,
+                        borderColor: 'rgba(255, 193, 7, 0.7)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [10, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0,
+                        spanGaps: false
                     });
                 }
 
-                // Check if turning 11 affects standards - add 11-12 standards after January 2026
-                const has11Standards = allDates.some(d => new Date(d) >= new Date('2026-01-01'));
-                if (has11Standards && timeStandards['11-12'][eventType]) {
+                // Add 11-12 standards after January 2026
+                if (timeStandards['11-12'][eventType]) {
                     const standards11 = timeStandards['11-12'][eventType];
 
+                    const standard11DataBB = combinedTimeline.map(date => {
+                        return new Date(date) >= new Date('2026-01-01') ? standards11.BB : null;
+                    });
+                    const standard11DataB = combinedTimeline.map(date => {
+                        return new Date(date) >= new Date('2026-01-01') ? standards11.B : null;
+                    });
+                    const standard11DataA = combinedTimeline.map(date => {
+                        return new Date(date) >= new Date('2026-01-01') ? standards11.A : null;
+                    });
+
+                    // Add 11-12 BB goal
                     datasets.push({
-                        label: '11-12 BB Goal',
-                        data: allDates.map(d => new Date(d) >= new Date('2026-01-01') ? standards11.BB : null),
-                        borderColor: 'rgba(40, 167, 69, 0.8)',
+                        label: '11-12 BB GOAL',
+                        data: standard11DataBB,
+                        borderColor: 'rgba(40, 167, 69, 1)',
                         backgroundColor: 'transparent',
                         borderWidth: 3,
+                        borderDash: [5, 10],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0,
+                        spanGaps: false
+                    });
+
+                    // Add 11-12 B standard
+                    datasets.push({
+                        label: '11-12 B',
+                        data: standard11DataB,
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 10],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0,
+                        spanGaps: false
+                    });
+
+                    // Add 11-12 A standard
+                    datasets.push({
+                        label: '11-12 A',
+                        data: standard11DataA,
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
                         borderDash: [5, 10],
                         fill: false,
                         pointRadius: 0,
@@ -660,7 +719,7 @@ function initializeEventCharts() {
                 const chart = new Chart(canvas, {
                     type: 'line',
                     data: {
-                        labels: [...validEvents.map(e => e.date), ...timelineData.predictions.map(p => p.date)],
+                        labels: combinedTimeline,
                         datasets: datasets
                     },
                     options: {
