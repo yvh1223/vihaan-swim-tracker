@@ -69,6 +69,36 @@ let eventData = [
     { event: "200 IM SCY", date: "2025-10-03", time: "3:06.13", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 307, age: 10 }
 ];
 
+// Time Standards from USA Swimming Motivational Times (SCY)
+const timeStandards = {
+    "10&U": {
+        "50 FR SCY": { "A": 34.19, "B": 41.99, "BB": 38.09 },
+        "100 FR SCY": { "A": 76.99, "B": 96.99, "BB": 86.99 },
+        "200 FR SCY": { "A": 164.99, "B": 206.29, "BB": 185.69 },
+        "50 BK SCY": { "A": 40.99, "B": 52.69, "BB": 46.79 },
+        "100 BK SCY": { "A": 87.49, "B": 110.69, "BB": 99.09 },
+        "50 BR SCY": { "A": 45.29, "B": 57.59, "BB": 51.39 },
+        "100 BR SCY": { "A": 99.59, "B": 125.59, "BB": 112.59 },
+        "50 FL SCY": { "A": 39.09, "B": 50.49, "BB": 44.79 },
+        "100 FL SCY": { "A": 92.29, "B": 124.19, "BB": 108.29 },
+        "100 IM SCY": { "A": 87.89, "B": 109.79, "BB": 98.79 },
+        "200 IM SCY": { "A": 188.89, "B": 238.09, "BB": 213.49 }
+    },
+    "11-12": {
+        "50 FR SCY": { "A": 30.89, "B": 35.99, "BB": 33.39 },
+        "100 FR SCY": { "A": 67.29, "B": 78.49, "BB": 72.89 },
+        "200 FR SCY": { "A": 147.49, "B": 172.09, "BB": 159.79 },
+        "50 BK SCY": { "A": 35.69, "B": 42.19, "BB": 38.99 },
+        "100 BK SCY": { "A": 76.59, "B": 90.89, "BB": 83.69 },
+        "50 BR SCY": { "A": 39.99, "B": 47.39, "BB": 43.69 },
+        "100 BR SCY": { "A": 86.69, "B": 102.29, "BB": 94.39 },
+        "50 FL SCY": { "A": 34.49, "B": 40.99, "BB": 37.79 },
+        "100 FL SCY": { "A": 76.89, "B": 92.09, "BB": 84.49 },
+        "100 IM SCY": { "A": 76.39, "B": 89.39, "BB": 82.89 },
+        "200 IM SCY": { "A": 166.69, "B": 196.19, "BB": 181.49 }
+    }
+};
+
 // Chart instances
 let ganttChart, overviewChart, unifiedEventChart;
 let eventCharts = {};
@@ -281,4 +311,132 @@ function analyzeSwimmingTrends() {
     }
     
     return analysis;
+}
+
+// Predict future times based on recent performance (July 2025 to October 2025)
+function predictFutureTimes(eventType, targetDate) {
+    // Get all times for this event, sorted by date
+    const eventTimes = eventData
+        .filter(e => e.event === eventType && timeToSeconds(e.time) !== null)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (eventTimes.length < 2) return null;
+
+    // Focus on recent performances (July 2025 onwards for better accuracy)
+    const recentTimes = eventTimes.filter(e => new Date(e.date) >= new Date('2025-07-01'));
+    const timesToAnalyze = recentTimes.length >= 2 ? recentTimes : eventTimes.slice(-3);
+
+    if (timesToAnalyze.length < 2) return null;
+
+    // Calculate linear regression for time improvement
+    const dataPoints = timesToAnalyze.map(e => ({
+        date: new Date(e.date).getTime(),
+        time: timeToSeconds(e.time)
+    }));
+
+    // Linear regression calculation
+    const n = dataPoints.length;
+    const sumX = dataPoints.reduce((sum, p) => sum + p.date, 0);
+    const sumY = dataPoints.reduce((sum, p) => sum + p.time, 0);
+    const sumXY = dataPoints.reduce((sum, p) => sum + (p.date * p.time), 0);
+    const sumXX = dataPoints.reduce((sum, p) => sum + (p.date * p.date), 0);
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    // Predict time at target date
+    const targetTime = slope * new Date(targetDate).getTime() + intercept;
+
+    // Calculate confidence based on improvement consistency
+    const currentBest = Math.min(...dataPoints.map(p => p.time));
+    const improvementRate = Math.abs(slope) * (30 * 24 * 60 * 60 * 1000); // per month in seconds
+
+    return {
+        predictedTime: Math.max(targetTime, currentBest * 0.85), // Don't predict impossibly fast times
+        currentBest: currentBest,
+        improvementRate: improvementRate,
+        confidence: timesToAnalyze.length >= 3 ? 'high' : 'medium',
+        dataPoints: dataPoints.length
+    };
+}
+
+// Generate timeline data with predictions extending to March 2026
+function generateTimelineWithPredictions(eventType) {
+    const historicalData = eventData
+        .filter(e => e.event === eventType && timeToSeconds(e.time) !== null)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map(e => ({
+            date: e.date,
+            time: timeToSeconds(e.time),
+            meet: e.meet,
+            isPrediction: false
+        }));
+
+    if (historicalData.length === 0) return { historical: [], predictions: [] };
+
+    // Generate monthly predictions from now until March 2026
+    const predictions = [];
+    const lastDate = new Date(historicalData[historicalData.length - 1].date);
+    const targetDate = new Date('2026-03-31');
+
+    let currentDate = new Date(lastDate);
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    currentDate.setDate(1); // First of next month
+
+    while (currentDate <= targetDate) {
+        const prediction = predictFutureTimes(eventType, currentDate.toISOString().split('T')[0]);
+        if (prediction) {
+            predictions.push({
+                date: currentDate.toISOString().split('T')[0],
+                time: prediction.predictedTime,
+                isPrediction: true,
+                confidence: prediction.confidence
+            });
+        }
+        currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+
+    return { historical: historicalData, predictions };
+}
+
+// Get appropriate time standard for Vihaan based on date (turns 11 in January 2026)
+function getTimeStandardForDate(eventType, date) {
+    const checkDate = new Date(date);
+    const birthdayMonth = new Date('2026-01-01'); // Approximation - turns 11 in January 2026
+
+    const ageGroup = checkDate >= birthdayMonth ? '11-12' : '10&U';
+    return timeStandards[ageGroup][eventType] || null;
+}
+
+// Calculate goal time needed for 11-12 BB standard by March 2026
+function getGoalAnalysis(eventType) {
+    const currentPR = eventData
+        .filter(e => e.event === eventType && timeToSeconds(e.time) !== null)
+        .map(e => timeToSeconds(e.time))
+        .reduce((min, time) => Math.min(min, time), Infinity);
+
+    if (!isFinite(currentPR)) return null;
+
+    const marchPrediction = predictFutureTimes(eventType, '2026-03-31');
+    const targetStandard = timeStandards['11-12'][eventType];
+
+    if (!targetStandard || !marchPrediction) return null;
+
+    const targetBB = targetStandard.BB;
+    const predictedTime = marchPrediction.predictedTime;
+    const gap = predictedTime - targetBB;
+
+    return {
+        currentPR: currentPR,
+        currentPRFormatted: secondsToTimeString(currentPR),
+        predictedMarch2026: predictedTime,
+        predictedFormatted: secondsToTimeString(predictedTime),
+        targetBB: targetBB,
+        targetBBFormatted: secondsToTimeString(targetBB),
+        gap: gap,
+        gapFormatted: secondsToTimeString(Math.abs(gap)),
+        onTrack: gap <= 0,
+        improvementNeeded: gap > 0 ? secondsToTimeString(gap) : null,
+        monthlyImprovementNeeded: gap > 0 ? secondsToTimeString(gap / 5) : null // 5 months till March
+    };
 }

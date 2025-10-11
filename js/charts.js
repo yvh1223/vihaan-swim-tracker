@@ -549,29 +549,119 @@ function initializeEventCharts() {
                     return;
                 }
 
+                // Get timeline data with predictions extending to March 2026
+                const timelineData = generateTimelineWithPredictions(eventType);
+                const allDates = [...validEvents.map(e => e.date), ...timelineData.predictions.map(p => p.date)];
+
+                // Prepare datasets
+                const datasets = [{
+                    label: 'Actual Times',
+                    data: validTimes,
+                    borderColor: '#2a5298',
+                    backgroundColor: 'rgba(42, 82, 152, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointBackgroundColor: validEvents.map(e => {
+                        switch(e.timeStandard) {
+                            case 'BB': return '#28a745';
+                            case 'B': return '#007bff';
+                            default: return '#dc3545';
+                        }
+                    }),
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }];
+
+                // Add prediction line if available
+                if (timelineData.predictions.length > 0) {
+                    datasets.push({
+                        label: 'Predicted Times',
+                        data: Array(validTimes.length - 1).fill(null).concat([validTimes[validTimes.length - 1]], timelineData.predictions.map(p => p.time)),
+                        borderColor: '#ffc107',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.3,
+                        pointBackgroundColor: '#ffc107',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointStyle: 'triangle'
+                    });
+                }
+
+                // Add time standard lines (horizontal reference lines)
+                const eventStandards = getTimeStandardForDate(eventType, validEvents[validEvents.length - 1].date);
+                if (eventStandards) {
+                    const lineColor = validEvents[0].event.includes(eventType) ? '#2a5298' : '#666';
+
+                    // Add BB standard line
+                    datasets.push({
+                        label: 'BB Standard',
+                        data: allDates.map(() => eventStandards.BB),
+                        borderColor: 'rgba(40, 167, 69, 0.6)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [10, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0
+                    });
+
+                    // Add B standard line
+                    datasets.push({
+                        label: 'B Standard',
+                        data: allDates.map(() => eventStandards.B),
+                        borderColor: 'rgba(0, 123, 255, 0.6)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [10, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0
+                    });
+
+                    // Add A standard line
+                    datasets.push({
+                        label: 'A Standard',
+                        data: allDates.map(() => eventStandards.A),
+                        borderColor: 'rgba(255, 193, 7, 0.6)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [10, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0
+                    });
+                }
+
+                // Check if turning 11 affects standards - add 11-12 standards after January 2026
+                const has11Standards = allDates.some(d => new Date(d) >= new Date('2026-01-01'));
+                if (has11Standards && timeStandards['11-12'][eventType]) {
+                    const standards11 = timeStandards['11-12'][eventType];
+
+                    datasets.push({
+                        label: '11-12 BB Goal',
+                        data: allDates.map(d => new Date(d) >= new Date('2026-01-01') ? standards11.BB : null),
+                        borderColor: 'rgba(40, 167, 69, 0.8)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 3,
+                        borderDash: [5, 10],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0,
+                        spanGaps: false
+                    });
+                }
+
                 const chart = new Chart(canvas, {
                     type: 'line',
                     data: {
-                        labels: validEvents.map(e => e.date),
-                        datasets: [{
-                            label: 'Time (seconds)',
-                            data: validTimes,
-                            borderColor: '#2a5298',
-                            backgroundColor: 'rgba(42, 82, 152, 0.1)',
-                            borderWidth: 3,
-                            fill: false,
-                            tension: 0.4,
-                            pointBackgroundColor: validEvents.map(e => {
-                                switch(e.timeStandard) {
-                                    case 'BB': return '#28a745';
-                                    case 'B': return '#007bff';
-                                    default: return '#dc3545';
-                                }
-                            }),
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 6
-                        }]
+                        labels: [...validEvents.map(e => e.date), ...timelineData.predictions.map(p => p.date)],
+                        datasets: datasets
                     },
                     options: {
                         responsive: true,
@@ -579,19 +669,37 @@ function initializeEventCharts() {
                         plugins: {
                             title: {
                                 display: true,
-                                text: `${eventType} Progress`
+                                text: `${eventType} Progress - Predictions to March 2026`
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        const event = validEvents[context.dataIndex];
-                                        return [
-                                            `Time: ${event.time}`,
-                                            `Standard: ${event.timeStandard}`,
-                                            `Points: ${event.points}`,
-                                            `Meet: ${event.meet}`
-                                        ];
+                                        const datasetLabel = context.dataset.label;
+                                        const dataIndex = context.dataIndex;
+
+                                        if (datasetLabel === 'Actual Times' && validEvents[dataIndex]) {
+                                            const event = validEvents[dataIndex];
+                                            return [
+                                                `Time: ${event.time}`,
+                                                `Standard: ${event.timeStandard}`,
+                                                `Points: ${event.points}`,
+                                                `Meet: ${event.meet}`
+                                            ];
+                                        } else if (datasetLabel === 'Predicted Times') {
+                                            return [`Predicted: ${secondsToTimeString(context.parsed.y)}`];
+                                        } else if (datasetLabel.includes('Standard') || datasetLabel.includes('Goal')) {
+                                            return [`${datasetLabel}: ${secondsToTimeString(context.parsed.y)}`];
+                                        }
+                                        return [`${datasetLabel}: ${context.parsed.y.toFixed(2)}s`];
                                     }
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    padding: 10,
+                                    usePointStyle: true
                                 }
                             }
                         },
@@ -600,13 +708,18 @@ function initializeEventCharts() {
                                 reverse: true, // Lower times are better
                                 title: {
                                     display: true,
-                                    text: 'Time (seconds)'
+                                    text: 'Time (seconds) - Lower is Better'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return secondsToTimeString(value);
+                                    }
                                 }
                             },
                             x: {
                                 title: {
                                     display: true,
-                                    text: 'Date'
+                                    text: 'Date (extending to March 2026)'
                                 }
                             }
                         }
