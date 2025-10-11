@@ -59,7 +59,14 @@ let eventData = [
     { event: "100 BR SCY", date: "2024-12-08", time: "1:46.36", timeStandard: "9-10", meet: "YMCA Dallas Winter Champs 2024", points: 0, age: 9 },
     { event: "50 FR SCY", date: "2025-02-22", time: "37.88", timeStandard: "0-10", meet: "YMCA Dallas League Meet @ Coppell", points: 0, age: 10 },
     { event: "50 BK SCY", date: "2025-02-22", time: "44.65", timeStandard: "0-10", meet: "YMCA Dallas League Meet @ Coppell", points: 0, age: 10 },
-    { event: "50 BR SCY", date: "2025-02-22", time: "46.91", timeStandard: "0-10", meet: "YMCA Dallas League Meet @ Coppell", points: 0, age: 10 }
+    { event: "50 BR SCY", date: "2025-02-22", time: "46.91", timeStandard: "0-10", meet: "YMCA Dallas League Meet @ Coppell", points: 0, age: 10 },
+    { event: "200 FR SCY", date: "2025-10-04", time: "2:45.08", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 278, age: 10 },
+    { event: "100 BK SCY", date: "2025-10-05", time: "1:24.00", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 384, age: 10 },
+    { event: "50 BR SCY", date: "2025-10-04", time: "44.10", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 366, age: 10 },
+    { event: "100 BR SCY", date: "2025-10-05", time: "1:38.29", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 326, age: 10 },
+    { event: "100 FL SCY", date: "2025-10-04", time: "1:40.26", timeStandard: "B", meet: "2025 NT LAC Splashing Pumpkins", points: 98, age: 10 },
+    { event: "100 IM SCY", date: "2025-10-05", time: "1:26.52", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 307, age: 10 },
+    { event: "200 IM SCY", date: "2025-10-03", time: "3:06.13", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 307, age: 10 }
 ];
 
 // Chart instances
