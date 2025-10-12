@@ -1791,18 +1791,22 @@ function initializeTimeStandardsGapChart() {
             return label;
         });
 
-        // Create single dataset for BB & B gaps (simplified color scheme)
+        // Create two datasets for BB & B gaps (simplified color scheme - both green)
         const datasets = [];
 
-        // Combined BB & B gaps with single color (green)
+        // Gap to BB standard (green)
         datasets.push({
-            label: `Gap to Next Standard (BB or B)`,
-            data: chartData.map(d => {
-                // Show gap to BB if not achieved, otherwise gap to B
-                if (d.gapToBB > 0) return d.gapToBB;
-                if (d.gapToB > 0) return d.gapToB;
-                return 0;
-            }),
+            label: `Gap to ${ageGroup} BB`,
+            data: chartData.map(d => d.gapToBB > 0 ? d.gapToBB : 0),
+            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+            borderColor: '#28a745',
+            borderWidth: 2
+        });
+
+        // Gap to B standard (same green color)
+        datasets.push({
+            label: `Gap to ${ageGroup} B`,
+            data: chartData.map(d => d.gapToB > 0 ? d.gapToB : 0),
             backgroundColor: 'rgba(40, 167, 69, 0.7)',
             borderColor: '#28a745',
             borderWidth: 2
@@ -1833,21 +1837,19 @@ function initializeTimeStandardsGapChart() {
                             label: function(context) {
                                 const dataIndex = context.dataIndex;
                                 const data = chartData[dataIndex];
-
-                                // Determine which standard is being targeted
-                                const standard = data.gapToBB > 0 ? 'BB' : 'B';
-                                const standardTime = standard === 'BB' ? data.standardsBB : data.standardsB;
+                                const standard = context.dataset.label.includes('BB') ? 'BB' : 'B';
                                 const gap = context.parsed.x;
 
                                 if (gap === 0) {
-                                    return `Both BB & B standards already achieved! ✅`;
+                                    return `${standard}: Already achieved! ✅`;
                                 }
+
+                                const standardTime = standard === 'BB' ? data.standardsBB : data.standardsB;
 
                                 return [
                                     `Current Time: ${secondsToTimeString(data.currentTime)}`,
-                                    `Next Target: ${ageGroup} ${standard} Standard`,
-                                    `${standard} Time: ${secondsToTimeString(standardTime)}`,
-                                    `Gap to ${standard}: ${secondsToTimeString(gap)} seconds`,
+                                    `${standard} Standard: ${secondsToTimeString(standardTime)}`,
+                                    `Gap: ${secondsToTimeString(gap)} seconds slower`,
                                     `Improvement needed: ${gap.toFixed(2)}s`
                                 ];
                             }
