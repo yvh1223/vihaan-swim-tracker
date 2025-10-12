@@ -1618,7 +1618,7 @@ function initializeTimeStandardsGapChart() {
             return;
         }
 
-        // Calculate personal records for filtered events
+        // Calculate personal records for filtered events, tracking achieved standards
         const prs = {};
         filteredData.forEach(event => {
             const time = timeToSeconds(event.time);
@@ -1627,7 +1627,8 @@ function initializeTimeStandardsGapChart() {
             if (!prs[event.event] || time < prs[event.event].time) {
                 prs[event.event] = {
                     time: time,
-                    date: event.date
+                    date: event.date,
+                    timeStandard: event.timeStandard // Track what was actually awarded
                 };
             }
         });
@@ -1650,46 +1651,43 @@ function initializeTimeStandardsGapChart() {
 
         eventTypes.forEach(eventType => {
             const currentTime = prs[eventType].time;
+            const awardedStandard = prs[eventType].timeStandard; // What was actually awarded
             const standards = timeStandards[ageGroup][eventType];
 
             if (!standards) return; // Skip if no standards available
 
-            // Calculate gaps to each standard
+            // Calculate gaps to each standard (for display purposes)
             const gapToBB = currentTime - standards.BB;
             const gapToB = currentTime - standards.B;
             const gapToA = currentTime - standards.A;
 
-            // Determine next target based on current performance
-            let nextTarget = 'None';
-            let gapToNext = 0;
-
-            if (gapToBB > 0) {
-                nextTarget = 'BB';
-                gapToNext = gapToBB;
-            } else if (gapToB > 0) {
-                nextTarget = 'B';
-                gapToNext = gapToB;
-            } else if (gapToA > 0) {
-                nextTarget = 'A';
-                gapToNext = gapToA;
-            }
+            // Determine what's achieved based on ACTUAL awarded standard, not calculations
+            const hasBB = awardedStandard === 'BB' || awardedStandard === 'B' || awardedStandard === 'A';
+            const hasB = awardedStandard === 'B' || awardedStandard === 'A';
+            const hasA = awardedStandard === 'A';
 
             chartData.push({
                 eventType: eventType,
                 currentTime: currentTime,
-                gapToBB: gapToBB,
-                gapToB: gapToB,
-                gapToA: gapToA,
-                nextTarget: nextTarget,
-                gapToNext: gapToNext,
+                gapToBB: hasBB ? 0 : gapToBB, // If achieved, gap is 0
+                gapToB: hasB ? 0 : gapToB,     // If achieved, gap is 0
+                gapToA: hasA ? 0 : gapToA,     // If achieved, gap is 0
+                hasBB: hasBB,
+                hasB: hasB,
+                hasA: hasA,
                 standardsBB: standards.BB,
                 standardsB: standards.B,
                 standardsA: standards.A
             });
         });
 
-        // Sort by gap to next target (descending - highest priority first)
-        chartData.sort((a, b) => b.gapToNext - a.gapToNext);
+        // Sort by largest remaining gap (descending - highest priority first)
+        chartData.sort((a, b) => {
+            // Calculate next gap for each event
+            const gapA = !a.hasBB ? a.gapToBB : (!a.hasB ? a.gapToB : 0);
+            const gapB = !b.hasBB ? b.gapToBB : (!b.hasB ? b.gapToB : 0);
+            return gapB - gapA;
+        });
 
         console.log('📈 Chart data prepared:', chartData.length, 'events');
         if (chartData.length > 0) {
@@ -1740,10 +1738,10 @@ function initializeTimeStandardsGapChart() {
         // Create the horizontal bar chart with achievement indicators (BB & B only)
         const labels = chartData.map(d => {
             let label = d.eventType;
-            // Add achievement indicators (BB and B only)
+            // Add achievement indicators based on actual awarded standards
             const achievements = [];
-            if (d.gapToBB <= 0) achievements.push('✓BB');
-            if (d.gapToB <= 0) achievements.push('✓B');
+            if (d.hasBB) achievements.push('✓BB');
+            if (d.hasB) achievements.push('✓B');
 
             if (achievements.length > 0) {
                 label = `${label}  [${achievements.join(' ')}]`;
@@ -1975,7 +1973,7 @@ function initializeATimeGapChart() {
             return;
         }
 
-        // Calculate personal records for filtered events
+        // Calculate personal records for filtered events, tracking achieved standards
         const prs = {};
         filteredData.forEach(event => {
             const time = timeToSeconds(event.time);
@@ -1984,7 +1982,8 @@ function initializeATimeGapChart() {
             if (!prs[event.event] || time < prs[event.event].time) {
                 prs[event.event] = {
                     time: time,
-                    date: event.date
+                    date: event.date,
+                    timeStandard: event.timeStandard // Track what was actually awarded
                 };
             }
         });
@@ -2004,17 +2003,22 @@ function initializeATimeGapChart() {
 
         eventTypes.forEach(eventType => {
             const currentTime = prs[eventType].time;
+            const awardedStandard = prs[eventType].timeStandard; // What was actually awarded
             const standards = timeStandards[ageGroup][eventType];
 
             if (!standards) return; // Skip if no standards available
 
-            // Calculate gap to A standard
+            // Calculate gap to A standard (for display purposes)
             const gapToA = currentTime - standards.A;
+
+            // Determine if A is achieved based on ACTUAL awarded standard
+            const hasA = awardedStandard === 'A';
 
             chartData.push({
                 eventType: eventType,
                 currentTime: currentTime,
-                gapToA: gapToA,
+                gapToA: hasA ? 0 : gapToA, // If achieved, gap is 0
+                hasA: hasA,
                 standardsA: standards.A
             });
         });
@@ -2065,8 +2069,8 @@ function initializeATimeGapChart() {
         // Create labels with achievement indicators
         const labels = chartData.map(d => {
             let label = d.eventType;
-            // Add achievement indicator if A is achieved
-            if (d.gapToA <= 0) {
+            // Add achievement indicator if A is achieved based on actual award
+            if (d.hasA) {
                 label = `${label}  [✓A]`;
             }
             return label;
