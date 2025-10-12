@@ -1575,7 +1575,7 @@ function initializeTimeStandardsGapChart() {
     console.log('🎯 Initializing Gap Analysis Chart...');
 
     try {
-        if (window.timeStandardsGapChart) {
+        if (window.timeStandardsGapChart && typeof window.timeStandardsGapChart.destroy === 'function') {
             window.timeStandardsGapChart.destroy();
             window.timeStandardsGapChart = null;
         }
@@ -1734,18 +1734,18 @@ function initializeTimeStandardsGapChart() {
             return;
         }
 
-        // Check if there are any positive gaps (unachieved standards)
-        const hasAnyGaps = chartData.some(d => d.gapToBB > 0 || d.gapToB > 0 || d.gapToA > 0);
+        // Check if there are any positive gaps for BB & B only (don't check A)
+        const hasAnyGaps = chartData.some(d => d.gapToBB > 0 || d.gapToB > 0);
 
         if (!hasAnyGaps) {
-            console.log('🎉 All standards already achieved for filtered events!');
+            console.log('🎉 All BB & B standards already achieved for filtered events!');
             // Show congratulations message
             window.timeStandardsGapChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Congratulations!'],
                     datasets: [{
-                        label: 'All Standards Achieved',
+                        label: 'All BB & B Standards Achieved',
                         data: [1],
                         backgroundColor: '#28a745'
                     }]
@@ -1757,7 +1757,7 @@ function initializeTimeStandardsGapChart() {
                     plugins: {
                         title: {
                             display: true,
-                            text: '🎉 All Time Standards Achieved! ' + ageGroup + ' BB & B Standards Met!',
+                            text: '🎉 All BB & B Standards Achieved! ' + ageGroup + ' Standards Met!',
                             font: { size: 16 }
                         },
                         legend: {
@@ -1978,7 +1978,7 @@ function initializeATimeGapChart() {
     console.log('🏆 Initializing A Time Gap Analysis Chart...');
 
     try {
-        if (window.aTimeGapChart) {
+        if (window.aTimeGapChart && typeof window.aTimeGapChart.destroy === 'function') {
             window.aTimeGapChart.destroy();
             window.aTimeGapChart = null;
         }
