@@ -1734,48 +1734,8 @@ function initializeTimeStandardsGapChart() {
             return;
         }
 
-        // Check if there are any positive gaps for BB & B only (don't check A)
-        const hasAnyGaps = chartData.some(d => d.gapToBB > 0 || d.gapToB > 0);
-
-        if (!hasAnyGaps) {
-            console.log('🎉 All BB & B standards already achieved for filtered events!');
-            // Show congratulations message
-            window.timeStandardsGapChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Congratulations!'],
-                    datasets: [{
-                        label: 'All BB & B Standards Achieved',
-                        data: [1],
-                        backgroundColor: '#28a745'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: '🎉 All BB & B Standards Achieved! ' + ageGroup + ' Standards Met!',
-                            font: { size: 16 }
-                        },
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: false
-                        },
-                        y: {
-                            display: false
-                        }
-                    }
-                }
-            });
-            return;
-        }
+        // Always show the chart - don't hide with congratulations message
+        // Even if all standards are achieved, show the events with achievement badges
 
         // Create the horizontal bar chart with achievement indicators (BB & B only)
         const labels = chartData.map(d => {
@@ -2099,43 +2059,8 @@ function initializeATimeGapChart() {
             return;
         }
 
-        // Check if there are any positive gaps (unachieved A standards)
-        const hasAnyGaps = chartData.some(d => d.gapToA > 0);
-
-        if (!hasAnyGaps) {
-            console.log('🎉 All A standards already achieved!');
-            window.aTimeGapChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Congratulations!'],
-                    datasets: [{
-                        label: 'All A Standards Achieved',
-                        data: [1],
-                        backgroundColor: '#ffc107'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: '🏆 All A Time Standards Achieved! Elite Level Reached!',
-                            font: { size: 16 }
-                        },
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: { display: false },
-                        y: { display: false }
-                    }
-                }
-            });
-            return;
-        }
+        // Always show the chart - don't hide with congratulations message
+        // Even if all A standards are achieved, show the events with achievement badges
 
         // Create labels with achievement indicators
         const labels = chartData.map(d => {
