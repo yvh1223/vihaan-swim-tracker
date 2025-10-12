@@ -1669,9 +1669,10 @@ function initializeTimeStandardsGapChart() {
             chartData.push({
                 eventType: eventType,
                 currentTime: currentTime,
-                gapToBB: hasBB ? 0 : gapToBB, // If achieved, gap is 0
-                gapToB: hasB ? 0 : gapToB,     // If achieved, gap is 0
-                gapToA: hasA ? 0 : gapToA,     // If achieved, gap is 0
+                // Keep actual calculated gaps for display
+                gapToBB: gapToBB > 0 ? gapToBB : 0, // Show positive gaps only
+                gapToB: gapToB > 0 ? gapToB : 0,     // Show positive gaps only
+                gapToA: gapToA > 0 ? gapToA : 0,     // Show positive gaps only
                 hasBB: hasBB,
                 hasB: hasB,
                 hasA: hasA,
@@ -2017,7 +2018,7 @@ function initializeATimeGapChart() {
             chartData.push({
                 eventType: eventType,
                 currentTime: currentTime,
-                gapToA: hasA ? 0 : gapToA, // If achieved, gap is 0
+                gapToA: gapToA > 0 ? gapToA : 0, // Show positive gaps only
                 hasA: hasA,
                 standardsA: standards.A
             });
