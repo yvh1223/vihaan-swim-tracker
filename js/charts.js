@@ -1053,7 +1053,7 @@ function initializeUnifiedEventChart() {
                         }
                     },
                     y: {
-                        reverse: false, // FIXED: Keep normal direction so improvements go downward (inward)
+                        reverse: false,
                         title: {
                             display: true,
                             text: 'Time (seconds) - Lower is Better'
@@ -1061,6 +1061,32 @@ function initializeUnifiedEventChart() {
                         ticks: {
                             callback: function(value) {
                                 return secondsToTimeString(value);
+                            }
+                        },
+                        // Auto-calculate min/max with buffer to zoom in on improvements
+                        afterDataLimits: function(axis) {
+                            const allTimes = [];
+                            axis.chart.data.datasets.forEach(dataset => {
+                                if (dataset.data && Array.isArray(dataset.data)) {
+                                    dataset.data.forEach(point => {
+                                        if (point && typeof point === 'object' && point.y) {
+                                            allTimes.push(point.y);
+                                        } else if (typeof point === 'number') {
+                                            allTimes.push(point);
+                                        }
+                                    });
+                                }
+                            });
+
+                            if (allTimes.length > 0) {
+                                const minTime = Math.min(...allTimes);
+                                const maxTime = Math.max(...allTimes);
+                                const range = maxTime - minTime;
+
+                                // Add 15% buffer on top and bottom for better visibility
+                                const buffer = range * 0.15;
+                                axis.min = Math.max(0, minTime - buffer);
+                                axis.max = maxTime + buffer;
                             }
                         }
                     }
@@ -1541,9 +1567,11 @@ function initializeAITrendAnalysis() {
 function initializeTimeStandardsGapChart() {
     const ctx = document.getElementById('timeStandardsGapChart');
     if (!ctx) {
-        console.log('Time Standards Gap chart canvas not found');
+        console.error('❌ Time Standards Gap chart canvas not found!');
         return;
     }
+
+    console.log('🎯 Initializing Gap Analysis Chart...');
 
     try {
         if (window.timeStandardsGapChart) {
@@ -1553,9 +1581,15 @@ function initializeTimeStandardsGapChart() {
 
         // Get filtered event data based on current chart filters
         const filteredData = getFilteredEventData();
-        console.log('Gap analysis - Filtered data:', filteredData.length, 'events');
+        console.log('📊 Gap analysis - Current filters:', chartFilters);
+        console.log('📊 Gap analysis - Filtered data:', filteredData.length, 'events');
+
+        if (filteredData.length > 0) {
+            console.log('📊 Sample filtered events:', filteredData.slice(0, 3).map(e => e.event));
+        }
 
         if (filteredData.length === 0) {
+            console.warn('⚠️ No filtered data for gap chart, showing empty message');
             // Show "no data" message
             window.timeStandardsGapChart = new Chart(ctx, {
                 type: 'bar',
@@ -1597,6 +1631,11 @@ function initializeTimeStandardsGapChart() {
             }
         });
 
+        console.log('🏆 Personal Records calculated:', Object.keys(prs).length, 'events');
+        if (Object.keys(prs).length > 0) {
+            console.log('🏆 Sample PRs:', Object.keys(prs).slice(0, 3));
+        }
+
         // Prepare data for gap analysis
         const chartData = [];
         const eventTypes = Object.keys(prs).sort();
@@ -1605,6 +1644,8 @@ function initializeTimeStandardsGapChart() {
         const now = new Date();
         const birthdayMonth = new Date('2026-01-01');
         const ageGroup = now >= birthdayMonth ? '11-12' : '10&U';
+
+        console.log('🎂 Age Group:', ageGroup);
 
         eventTypes.forEach(eventType => {
             const currentTime = prs[eventType].time;
@@ -1648,6 +1689,13 @@ function initializeTimeStandardsGapChart() {
 
         // Sort by gap to next target (descending - highest priority first)
         chartData.sort((a, b) => b.gapToNext - a.gapToNext);
+
+        console.log('📈 Chart data prepared:', chartData.length, 'events');
+        if (chartData.length > 0) {
+            console.log('📈 Sample chart data:', chartData.slice(0, 2));
+        } else {
+            console.error('❌ No chart data to display! Check if time standards exist for filtered events.');
+        }
 
         // Create the horizontal bar chart
         const labels = chartData.map(d => d.eventType);
@@ -1751,8 +1799,9 @@ function initializeTimeStandardsGapChart() {
             }
         });
 
-        console.log('Gap analysis chart created successfully');
+        console.log('✅ Gap analysis chart created successfully with', labels.length, 'events');
     } catch (error) {
-        console.error('Error initializing time standards gap chart:', error);
+        console.error('❌ Error initializing time standards gap chart:', error);
+        console.error('Error details:', error.stack);
     }
 }
