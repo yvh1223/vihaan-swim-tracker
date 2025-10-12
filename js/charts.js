@@ -1257,14 +1257,15 @@ function updateChartFilters() {
     const distanceFilter = document.getElementById('distanceFilter');
     const strokeFilter = document.getElementById('strokeFilter');
     const timePeriodFilter = document.getElementById('timePeriodFilter');
-    
+
     if (courseTypeFilter) chartFilters.courseType = courseTypeFilter.value;
     if (distanceFilter) chartFilters.distance = distanceFilter.value;
     if (strokeFilter) chartFilters.stroke = strokeFilter.value;
     if (timePeriodFilter) chartFilters.timePeriod = timePeriodFilter.value;
-    
+
     console.log('Updated filters:', chartFilters);
     initializeUnifiedEventChart();
+    initializeTimeStandardsGapChart();
 }
 
 // Initialize filter values
@@ -1459,18 +1460,18 @@ function initializeAITrendAnalysis() {
 
     try {
         const analysis = analyzeSwimmingTrends();
-        
+
         let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">';
-        
+
         // Event Analysis Summary
         html += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">';
         html += '<h4 style="margin-top: 0; font-size: 1.1em;">📊 Performance Analysis</h4>';
-        
+
         Object.keys(analysis.eventAnalysis).forEach(event => {
             const data = analysis.eventAnalysis[event];
             const trendIcon = data.trend === 'improving' ? '📈' : '📊';
             const confidenceColor = data.confidence === 'high' ? '#28a745' : '#ffc107';
-            
+
             html += `
                 <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 5px;">
                     <div style="font-weight: bold; font-size: 0.9em;">${trendIcon} ${event}</div>
@@ -1483,16 +1484,16 @@ function initializeAITrendAnalysis() {
             `;
         });
         html += '</div>';
-        
+
         // Monthly Targets
         html += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">';
         html += '<h4 style="margin-top: 0; font-size: 1.1em;">🎯 6-Month Targets</h4>';
-        
+
         // Show targets for the most practiced event
         const mostPracticedEvent = Object.keys(analysis.monthlyTargets)[0];
         if (mostPracticedEvent && analysis.monthlyTargets[mostPracticedEvent]) {
             html += `<div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">${mostPracticedEvent}</div>`;
-            
+
             analysis.monthlyTargets[mostPracticedEvent].slice(0, 3).forEach((target, index) => {
                 const monthName = new Date(target.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
                 html += `
@@ -1504,14 +1505,14 @@ function initializeAITrendAnalysis() {
             });
         }
         html += '</div>';
-        
+
         html += '</div>';
-        
+
         // Recommendations
         if (analysis.recommendations.length > 0) {
             html += '<div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">';
             html += '<h4 style="margin-top: 0; font-size: 1.1em;">💡 AI Recommendations</h4>';
-            
+
             analysis.recommendations.forEach(rec => {
                 const typeIcons = {
                     'maintain': '✅',
@@ -1519,7 +1520,7 @@ function initializeAITrendAnalysis() {
                     'excellent': '🏆',
                     'review': '🔍'
                 };
-                
+
                 html += `
                     <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; font-size: 0.85em;">
                         <strong>${typeIcons[rec.type]} ${rec.event}:</strong> ${rec.message}
@@ -1528,10 +1529,230 @@ function initializeAITrendAnalysis() {
             });
             html += '</div>';
         }
-        
+
         container.innerHTML = html;
     } catch (error) {
         console.error('Error generating AI trend analysis:', error);
         container.innerHTML = '<p style="font-size: 0.9em; opacity: 0.8;">AI analysis temporarily unavailable</p>';
+    }
+}
+
+// Initialize Time Standards Gap Analysis chart
+function initializeTimeStandardsGapChart() {
+    const ctx = document.getElementById('timeStandardsGapChart');
+    if (!ctx) {
+        console.log('Time Standards Gap chart canvas not found');
+        return;
+    }
+
+    try {
+        if (window.timeStandardsGapChart) {
+            window.timeStandardsGapChart.destroy();
+            window.timeStandardsGapChart = null;
+        }
+
+        // Get filtered event data based on current chart filters
+        const filteredData = getFilteredEventData();
+        console.log('Gap analysis - Filtered data:', filteredData.length, 'events');
+
+        if (filteredData.length === 0) {
+            // Show "no data" message
+            window.timeStandardsGapChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['No Data'],
+                    datasets: [{
+                        label: 'No data available',
+                        data: [0],
+                        backgroundColor: '#666'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'No data matches the current filters',
+                            font: { size: 16 }
+                        }
+                    }
+                }
+            });
+            return;
+        }
+
+        // Calculate personal records for filtered events
+        const prs = {};
+        filteredData.forEach(event => {
+            const time = timeToSeconds(event.time);
+            if (time === null) return;
+
+            if (!prs[event.event] || time < prs[event.event].time) {
+                prs[event.event] = {
+                    time: time,
+                    date: event.date
+                };
+            }
+        });
+
+        // Prepare data for gap analysis
+        const chartData = [];
+        const eventTypes = Object.keys(prs).sort();
+
+        // Use current date to determine age group (10&U or 11-12)
+        const now = new Date();
+        const birthdayMonth = new Date('2026-01-01');
+        const ageGroup = now >= birthdayMonth ? '11-12' : '10&U';
+
+        eventTypes.forEach(eventType => {
+            const currentTime = prs[eventType].time;
+            const standards = timeStandards[ageGroup][eventType];
+
+            if (!standards) return; // Skip if no standards available
+
+            // Calculate gaps to each standard
+            const gapToBB = currentTime - standards.BB;
+            const gapToB = currentTime - standards.B;
+            const gapToA = currentTime - standards.A;
+
+            // Determine next target based on current performance
+            let nextTarget = 'None';
+            let gapToNext = 0;
+
+            if (gapToBB > 0) {
+                nextTarget = 'BB';
+                gapToNext = gapToBB;
+            } else if (gapToB > 0) {
+                nextTarget = 'B';
+                gapToNext = gapToB;
+            } else if (gapToA > 0) {
+                nextTarget = 'A';
+                gapToNext = gapToA;
+            }
+
+            chartData.push({
+                eventType: eventType,
+                currentTime: currentTime,
+                gapToBB: gapToBB,
+                gapToB: gapToB,
+                gapToA: gapToA,
+                nextTarget: nextTarget,
+                gapToNext: gapToNext,
+                standardsBB: standards.BB,
+                standardsB: standards.B,
+                standardsA: standards.A
+            });
+        });
+
+        // Sort by gap to next target (descending - highest priority first)
+        chartData.sort((a, b) => b.gapToNext - a.gapToNext);
+
+        // Create the horizontal bar chart
+        const labels = chartData.map(d => d.eventType);
+
+        // Create datasets for gap to each standard
+        const datasets = [];
+
+        // Gap to BB standard (only if not achieved)
+        datasets.push({
+            label: `Gap to ${ageGroup} BB`,
+            data: chartData.map(d => d.gapToBB > 0 ? d.gapToBB : 0),
+            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+            borderColor: '#28a745',
+            borderWidth: 2
+        });
+
+        // Gap to B standard (only if not achieved)
+        datasets.push({
+            label: `Gap to ${ageGroup} B`,
+            data: chartData.map(d => d.gapToB > 0 ? d.gapToB : 0),
+            backgroundColor: 'rgba(0, 123, 255, 0.7)',
+            borderColor: '#007bff',
+            borderWidth: 2
+        });
+
+        // Gap to A standard (only if not achieved)
+        datasets.push({
+            label: `Gap to ${ageGroup} A`,
+            data: chartData.map(d => d.gapToA > 0 ? d.gapToA : 0),
+            backgroundColor: 'rgba(255, 193, 7, 0.7)',
+            borderColor: '#ffc107',
+            borderWidth: 2
+        });
+
+        window.timeStandardsGapChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y', // Horizontal bars
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `Time Standards Gap Analysis (${ageGroup} Age Group)`,
+                        font: { size: 16 }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const dataIndex = context.dataIndex;
+                                const data = chartData[dataIndex];
+                                const standard = context.dataset.label.includes('BB') ? 'BB' :
+                                              context.dataset.label.includes('B') ? 'B' : 'A';
+
+                                const gap = context.parsed.x;
+                                if (gap === 0) {
+                                    return `${standard}: Already achieved! ✅`;
+                                }
+
+                                return [
+                                    `Current Time: ${secondsToTimeString(data.currentTime)}`,
+                                    `${standard} Standard: ${secondsToTimeString(
+                                        standard === 'BB' ? data.standardsBB :
+                                        standard === 'B' ? data.standardsB : data.standardsA
+                                    )}`,
+                                    `Gap: ${secondsToTimeString(gap)} seconds slower`,
+                                    `Priority: ${data.nextTarget === standard ? '🎯 Next Target!' : 'Future goal'}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Seconds to Improve (Lower is Better)'
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(2) + 's';
+                            }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Event'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Gap analysis chart created successfully');
+    } catch (error) {
+        console.error('Error initializing time standards gap chart:', error);
     }
 }

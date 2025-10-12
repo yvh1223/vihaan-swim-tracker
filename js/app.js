@@ -25,6 +25,7 @@ function showTab(tabName) {
         } else if (tabName === 'events') {
             initializeFilterValues();
             initializeUnifiedEventChart();
+            initializeTimeStandardsGapChart();
             initializeAITrendAnalysis();
         } else if (tabName === 'overview') {
             initializeOverviewChart();
@@ -133,6 +134,7 @@ function refreshAllCharts() {
         initializeOverviewChart();
         initializeGanttChart();
         initializeUnifiedEventChart();
+        initializeTimeStandardsGapChart();
         initializePersonalRecordsTable();
         initializeImprovementAnalytics();
         updateDataSummary();
