@@ -1776,8 +1776,20 @@ function initializeTimeStandardsGapChart() {
             return;
         }
 
-        // Create the horizontal bar chart
-        const labels = chartData.map(d => d.eventType);
+        // Create the horizontal bar chart with achievement indicators
+        const labels = chartData.map(d => {
+            let label = d.eventType;
+            // Add achievement indicators
+            const achievements = [];
+            if (d.gapToBB <= 0) achievements.push('✓BB');
+            if (d.gapToB <= 0) achievements.push('✓B');
+            if (d.gapToA <= 0) achievements.push('✓A');
+
+            if (achievements.length > 0) {
+                label = `${label}  [${achievements.join(' ')}]`;
+            }
+            return label;
+        });
 
         // Create datasets for gap to each standard
         const datasets = [];
@@ -1872,6 +1884,51 @@ function initializeTimeStandardsGapChart() {
                         title: {
                             display: true,
                             text: 'Event'
+                        }
+                    }
+                },
+                // Add gap values directly on bars
+                animation: {
+                    onComplete: function(animation) {
+                        const chart = animation.chart;
+                        const ctx = chart.ctx;
+
+                        try {
+                            ctx.save();
+                            ctx.font = 'bold 12px Arial';
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'middle';
+
+                            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                                const meta = chart.getDatasetMeta(datasetIndex);
+
+                                meta.data.forEach((bar, index) => {
+                                    if (!bar || !bar.x || !bar.y) return;
+
+                                    const value = dataset.data[index];
+                                    if (value === 0) return; // Don't show 0 values
+
+                                    // Position text at end of bar
+                                    const x = bar.x + 5; // 5px padding from bar end
+                                    const y = bar.y;
+
+                                    // Format the gap time
+                                    const gapText = secondsToTimeString(value);
+
+                                    // Draw text with background for better visibility
+                                    ctx.fillStyle = dataset.borderColor;
+                                    ctx.strokeStyle = 'white';
+                                    ctx.lineWidth = 3;
+
+                                    // Draw background stroke
+                                    ctx.strokeText(gapText, x, y);
+                                    // Draw the text
+                                    ctx.fillText(gapText, x, y);
+                                });
+                            });
+                            ctx.restore();
+                        } catch (e) {
+                            console.log('Gap chart annotation error (non-critical):', e);
                         }
                     }
                 }
