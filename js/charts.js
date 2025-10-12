@@ -1697,6 +1697,49 @@ function initializeTimeStandardsGapChart() {
             console.error('❌ No chart data to display! Check if time standards exist for filtered events.');
         }
 
+        // Check if there are any positive gaps (unachieved standards)
+        const hasAnyGaps = chartData.some(d => d.gapToBB > 0 || d.gapToB > 0 || d.gapToA > 0);
+
+        if (!hasAnyGaps) {
+            console.log('🎉 All standards already achieved for filtered events!');
+            // Show congratulations message
+            window.timeStandardsGapChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Congratulations!'],
+                    datasets: [{
+                        label: 'All Standards Achieved',
+                        data: [1],
+                        backgroundColor: '#28a745'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '🎉 All Time Standards Achieved! ' + ageGroup + ' BB & B Standards Met!',
+                            font: { size: 16 }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            return;
+        }
+
         // Create the horizontal bar chart
         const labels = chartData.map(d => d.eventType);
 

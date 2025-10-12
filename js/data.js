@@ -104,11 +104,11 @@ let ganttChart, overviewChart, unifiedEventChart;
 let eventCharts = {};
 let ganttViewMode = 'timeline'; // 'duration' or 'timeline' - default to timeline
 
-// Filter state for unified chart - default to 50 FR for cleaner visualization
+// Filter state for unified chart - default to ALL for comprehensive view
 let chartFilters = {
     courseType: 'SCY',
-    distance: '50',
-    stroke: 'FR',
+    distance: 'ALL',
+    stroke: 'ALL',
     timePeriod: 'ALL'
 };
 
