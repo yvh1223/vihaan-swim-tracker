@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gap Chart Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <h2>Simple Gap Chart Test</h2>
+    <div style="width: 800px; height: 400px;">
+        <canvas id="testChart"></canvas>
+    </div>
+
+    <script>
+        // Minimal test - this WILL work
+        const ctx = document.getElementById('testChart');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['50 FR SCY', '100 FR SCY', '50 BK SCY'],
+                datasets: [{
+                    label: 'Gap to BB',
+                    data: [3.5, 10.2, 4.8],
+                    backgroundColor: 'rgba(40, 167, 69, 0.7)'
+                }, {
+                    label: 'Gap to B',
+                    data: [0, 5.5, 0],
+                    backgroundColor: 'rgba(0, 123, 255, 0.7)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Test Gap Analysis Chart'
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Seconds to Improve'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

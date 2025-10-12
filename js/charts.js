@@ -1697,6 +1697,42 @@ function initializeTimeStandardsGapChart() {
             console.error('❌ No chart data to display! Check if time standards exist for filtered events.');
         }
 
+        // If no chart data, show informative message
+        if (chartData.length === 0) {
+            console.warn('⚠️ No chart data available - no time standards found for filtered events');
+            window.timeStandardsGapChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['No Standards Available'],
+                    datasets: [{
+                        label: 'No data',
+                        data: [0],
+                        backgroundColor: '#ffc107'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'No time standards found for filtered events (' + ageGroup + ')',
+                            font: { size: 16 }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+            return;
+        }
+
         // Check if there are any positive gaps (unachieved standards)
         const hasAnyGaps = chartData.some(d => d.gapToBB > 0 || d.gapToB > 0 || d.gapToA > 0);
 
@@ -1846,5 +1882,41 @@ function initializeTimeStandardsGapChart() {
     } catch (error) {
         console.error('❌ Error initializing time standards gap chart:', error);
         console.error('Error details:', error.stack);
+
+        // Create a visible error chart so user knows something went wrong
+        try {
+            window.timeStandardsGapChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Error'],
+                    datasets: [{
+                        label: 'Chart Error',
+                        data: [1],
+                        backgroundColor: '#dc3545'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '❌ Error loading gap chart. Check console for details: ' + error.message,
+                            font: { size: 14 }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+        } catch (chartError) {
+            console.error('Failed to create error chart:', chartError);
+        }
     }
 }
