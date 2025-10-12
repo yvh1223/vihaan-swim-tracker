@@ -1667,35 +1667,25 @@ function initializeTimeStandardsGapChart() {
             const hasB = awardedStandard === 'B';
             const hasA = awardedStandard === 'A';
 
-            // Show gaps for ANY standard not yet awarded, regardless of time
+            // Show gap to BB standard if not yet awarded
             // Use absolute value because swimmer may be faster but award not received
-            // If BB not awarded: show absolute gap to BB
-            // If BB awarded but B not awarded: show absolute gap to B
             const displayGapToBB = !hasBB ? Math.abs(gapToBB) : 0;
-            const displayGapToB = hasBB && !hasB ? Math.abs(gapToB) : 0;
 
             chartData.push({
                 eventType: eventType,
                 currentTime: currentTime,
                 gapToBB: displayGapToBB,
-                gapToB: displayGapToB,
-                gapToA: gapToA > 0 ? gapToA : 0, // A uses mathematical gap
                 hasBB: hasBB,
-                hasB: hasB,
+                hasB: hasB,  // Keep for badge display only
                 hasA: hasA,
                 standardsBB: standards.BB,
-                standardsB: standards.B,
+                standardsB: standards.B,  // Keep for reference only
                 standardsA: standards.A
             });
         });
 
-        // Sort by largest remaining gap (descending - highest priority first)
-        chartData.sort((a, b) => {
-            // Calculate next gap for each event
-            const gapA = !a.hasBB ? a.gapToBB : (!a.hasB ? a.gapToB : 0);
-            const gapB = !b.hasBB ? b.gapToBB : (!b.hasB ? b.gapToB : 0);
-            return gapB - gapA;
-        });
+        // Sort by gap to BB (descending - highest priority first)
+        chartData.sort((a, b) => b.gapToBB - a.gapToBB);
 
         console.log('📈 Chart data prepared:', chartData.length, 'events');
         if (chartData.length > 0) {
@@ -1743,7 +1733,7 @@ function initializeTimeStandardsGapChart() {
         // Always show the chart - don't hide with congratulations message
         // Even if all standards are achieved, show the events with achievement badges
 
-        // Create the horizontal bar chart with achievement indicators (BB & B only)
+        // Create the horizontal bar chart with achievement indicators
         const labels = chartData.map(d => {
             let label = d.eventType;
             // Add achievement indicators based on actual awarded standards
@@ -1757,26 +1747,14 @@ function initializeTimeStandardsGapChart() {
             return label;
         });
 
-        // Create two datasets for BB & B gaps (simplified color scheme - both green)
-        const datasets = [];
-
-        // Gap to BB standard (green)
-        datasets.push({
+        // Create single dataset for BB gaps (green)
+        const datasets = [{
             label: `Gap to ${ageGroup} BB`,
-            data: chartData.map(d => d.gapToBB > 0 ? d.gapToBB : 0),
+            data: chartData.map(d => d.gapToBB),
             backgroundColor: 'rgba(40, 167, 69, 0.7)',
             borderColor: '#28a745',
             borderWidth: 2
-        });
-
-        // Gap to B standard (same green color)
-        datasets.push({
-            label: `Gap to ${ageGroup} B`,
-            data: chartData.map(d => d.gapToB > 0 ? d.gapToB : 0),
-            backgroundColor: 'rgba(40, 167, 69, 0.7)',
-            borderColor: '#28a745',
-            borderWidth: 2
-        });
+        }];
 
         window.timeStandardsGapChart = new Chart(ctx, {
             type: 'bar',
@@ -1791,7 +1769,7 @@ function initializeTimeStandardsGapChart() {
                 plugins: {
                     title: {
                         display: true,
-                        text: `BB & B Standards - Gap Analysis (${ageGroup} Age Group)`,
+                        text: `BB Standards - Gap Analysis (${ageGroup} Age Group)`,
                         font: { size: 16 }
                     },
                     legend: {
@@ -1803,20 +1781,17 @@ function initializeTimeStandardsGapChart() {
                             label: function(context) {
                                 const dataIndex = context.dataIndex;
                                 const data = chartData[dataIndex];
-                                const standard = context.dataset.label.includes('BB') ? 'BB' : 'B';
                                 const gap = context.parsed.x;
 
                                 if (gap === 0) {
-                                    return `${standard}: Already achieved! ✅`;
+                                    return `BB Standard already achieved! ✅`;
                                 }
-
-                                const standardTime = standard === 'BB' ? data.standardsBB : data.standardsB;
 
                                 return [
                                     `Current Time: ${secondsToTimeString(data.currentTime)}`,
-                                    `${standard} Standard: ${secondsToTimeString(standardTime)}`,
-                                    `Gap: ${secondsToTimeString(gap)} seconds slower`,
-                                    `Improvement needed: ${gap.toFixed(2)}s`
+                                    `BB Standard: ${secondsToTimeString(data.standardsBB)}`,
+                                    `Gap to BB: ${secondsToTimeString(gap)}`,
+                                    `${data.currentTime < data.standardsBB ? 'Already faster - need award' : 'Improvement needed'}: ${gap.toFixed(2)}s`
                                 ];
                             }
                         }
