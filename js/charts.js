@@ -876,6 +876,13 @@ function initializeUnifiedEventChart() {
 
             console.log(`Processing ${eventType}: ${events.length} events`);
 
+            // Get all unique dates for this chart
+            const allDates = [...new Set(filteredData.map(e => e.date))].sort();
+
+            // Get time standards for this event type
+            const standards10U = timeStandards['10&U'][eventType];
+            const standards11 = timeStandards['11-12'][eventType];
+
             datasets.push({
                 label: eventType,
                 data: events.map(e => ({
@@ -910,6 +917,114 @@ function initializeUnifiedEventChart() {
                 // Fix legend color by setting it explicitly
                 legendColor: colors[index % colors.length]
             });
+
+            // Add horizontal time standard lines for each event
+            if (standards10U) {
+                // 10&U BB Standard (before Jan 2026)
+                datasets.push({
+                    label: `${eventType} - 10&U BB`,
+                    data: allDates.map(date => ({
+                        x: date,
+                        y: new Date(date) < new Date('2026-01-01') ? standards10U.BB : null
+                    })),
+                    borderColor: 'rgba(40, 167, 69, 0.5)',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    spanGaps: false,
+                    hidden: false
+                });
+
+                // 10&U B Standard (before Jan 2026)
+                datasets.push({
+                    label: `${eventType} - 10&U B`,
+                    data: allDates.map(date => ({
+                        x: date,
+                        y: new Date(date) < new Date('2026-01-01') ? standards10U.B : null
+                    })),
+                    borderColor: 'rgba(0, 123, 255, 0.5)',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    spanGaps: false,
+                    hidden: false
+                });
+
+                // 10&U A Standard (before Jan 2026)
+                datasets.push({
+                    label: `${eventType} - 10&U A`,
+                    data: allDates.map(date => ({
+                        x: date,
+                        y: new Date(date) < new Date('2026-01-01') ? standards10U.A : null
+                    })),
+                    borderColor: 'rgba(255, 193, 7, 0.5)',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    spanGaps: false,
+                    hidden: false
+                });
+            }
+
+            // Add 11-12 standards (after Jan 2026)
+            if (standards11) {
+                // 11-12 BB GOAL (after Jan 2026)
+                datasets.push({
+                    label: `${eventType} - 11-12 BB GOAL`,
+                    data: allDates.map(date => ({
+                        x: date,
+                        y: new Date(date) >= new Date('2026-01-01') ? standards11.BB : null
+                    })),
+                    borderColor: 'rgba(40, 167, 69, 0.8)',
+                    borderWidth: 3,
+                    borderDash: [5, 10],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    spanGaps: false,
+                    hidden: false
+                });
+
+                // 11-12 B Standard (after Jan 2026)
+                datasets.push({
+                    label: `${eventType} - 11-12 B`,
+                    data: allDates.map(date => ({
+                        x: date,
+                        y: new Date(date) >= new Date('2026-01-01') ? standards11.B : null
+                    })),
+                    borderColor: 'rgba(0, 123, 255, 0.8)',
+                    borderWidth: 2,
+                    borderDash: [5, 10],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    spanGaps: false,
+                    hidden: false
+                });
+
+                // 11-12 A Standard (after Jan 2026)
+                datasets.push({
+                    label: `${eventType} - 11-12 A`,
+                    data: allDates.map(date => ({
+                        x: date,
+                        y: new Date(date) >= new Date('2026-01-01') ? standards11.A : null
+                    })),
+                    borderColor: 'rgba(255, 193, 7, 0.8)',
+                    borderWidth: 2,
+                    borderDash: [5, 10],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    spanGaps: false,
+                    hidden: false
+                });
+            }
 
             // Add AI target prediction line if available
             if (aiAnalysis.monthlyTargets && aiAnalysis.monthlyTargets[eventType] && events.length >= 2) {
