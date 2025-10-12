@@ -1661,9 +1661,10 @@ function initializeTimeStandardsGapChart() {
             const gapToB = currentTime - standards.B;
             const gapToA = currentTime - standards.A;
 
-            // Determine what's achieved based on ACTUAL awarded standard, not calculations
-            const hasBB = awardedStandard === 'BB' || awardedStandard === 'B' || awardedStandard === 'A';
-            const hasB = awardedStandard === 'B' || awardedStandard === 'A';
+            // Determine what's achieved based ONLY on what was actually awarded
+            // Do NOT assume B includes BB - only count exact awards
+            const hasBB = awardedStandard === 'BB';
+            const hasB = awardedStandard === 'B';
             const hasA = awardedStandard === 'A';
 
             // Show gaps based on what's NOT YET AWARDED
@@ -2018,7 +2019,7 @@ function initializeATimeGapChart() {
             // Calculate gap to A standard (for display purposes)
             const gapToA = currentTime - standards.A;
 
-            // Determine if A is achieved based on ACTUAL awarded standard
+            // Determine if A is achieved based ONLY on what was actually awarded
             const hasA = awardedStandard === 'A';
 
             // Only show gap if NOT awarded A AND time is slower than A standard
