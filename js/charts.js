@@ -920,16 +920,33 @@ function initializeUnifiedEventChart() {
 
             // Add horizontal time standard lines for each event
             if (standards10U) {
-                // 10&U BB Standard (before Jan 2026)
+                // 10&U A Standard - FULL WIDTH (most important reference line)
+                datasets.push({
+                    label: `${eventType} - 10&U A`,
+                    data: allDates.map(date => ({
+                        x: date,
+                        y: standards10U.A  // Always show, regardless of date
+                    })),
+                    borderColor: 'rgba(255, 193, 7, 0.6)',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    spanGaps: false,
+                    hidden: false
+                });
+
+                // 10&U BB Standard (shorter, before Jan 2026 only)
                 datasets.push({
                     label: `${eventType} - 10&U BB`,
                     data: allDates.map(date => ({
                         x: date,
                         y: new Date(date) < new Date('2026-01-01') ? standards10U.BB : null
                     })),
-                    borderColor: 'rgba(40, 167, 69, 0.5)',
-                    borderWidth: 2,
-                    borderDash: [10, 5],
+                    borderColor: 'rgba(40, 167, 69, 0.4)',
+                    borderWidth: 1.5,
+                    borderDash: [8, 4],
                     pointRadius: 0,
                     fill: false,
                     tension: 0,
@@ -937,33 +954,16 @@ function initializeUnifiedEventChart() {
                     hidden: false
                 });
 
-                // 10&U B Standard (before Jan 2026)
+                // 10&U B Standard (shorter, before Jan 2026 only)
                 datasets.push({
                     label: `${eventType} - 10&U B`,
                     data: allDates.map(date => ({
                         x: date,
                         y: new Date(date) < new Date('2026-01-01') ? standards10U.B : null
                     })),
-                    borderColor: 'rgba(0, 123, 255, 0.5)',
-                    borderWidth: 2,
-                    borderDash: [10, 5],
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0,
-                    spanGaps: false,
-                    hidden: false
-                });
-
-                // 10&U A Standard (before Jan 2026)
-                datasets.push({
-                    label: `${eventType} - 10&U A`,
-                    data: allDates.map(date => ({
-                        x: date,
-                        y: new Date(date) < new Date('2026-01-01') ? standards10U.A : null
-                    })),
-                    borderColor: 'rgba(255, 193, 7, 0.5)',
-                    borderWidth: 2,
-                    borderDash: [10, 5],
+                    borderColor: 'rgba(0, 123, 255, 0.4)',
+                    borderWidth: 1.5,
+                    borderDash: [8, 4],
                     pointRadius: 0,
                     fill: false,
                     tension: 0,
