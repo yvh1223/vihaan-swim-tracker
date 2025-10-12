@@ -1666,12 +1666,12 @@ function initializeTimeStandardsGapChart() {
             const hasB = awardedStandard === 'B' || awardedStandard === 'A';
             const hasA = awardedStandard === 'A';
 
-            // Show gaps based on what's NOT YET AWARDED (not mathematical calculation)
-            // If BB not awarded, show gap to BB
-            // If BB awarded but B not awarded, show gap to B
-            // Use absolute value of gap to always show positive numbers
-            const displayGapToBB = !hasBB ? Math.abs(gapToBB) : 0;
-            const displayGapToB = hasBB && !hasB ? Math.abs(gapToB) : 0;
+            // Show gaps based on what's NOT YET AWARDED
+            // Only show gap if time is actually SLOWER than standard (positive gap)
+            // If BB not awarded and time slower than BB: show gap to BB
+            // If BB awarded but B not awarded and time slower than B: show gap to B
+            const displayGapToBB = !hasBB && gapToBB > 0 ? gapToBB : 0;
+            const displayGapToB = hasBB && !hasB && gapToB > 0 ? gapToB : 0;
 
             chartData.push({
                 eventType: eventType,
@@ -2021,10 +2021,13 @@ function initializeATimeGapChart() {
             // Determine if A is achieved based on ACTUAL awarded standard
             const hasA = awardedStandard === 'A';
 
+            // Only show gap if NOT awarded A AND time is slower than A standard
+            const displayGapToA = !hasA && gapToA > 0 ? gapToA : 0;
+
             chartData.push({
                 eventType: eventType,
                 currentTime: currentTime,
-                gapToA: gapToA > 0 ? gapToA : 0, // Show positive gaps only
+                gapToA: displayGapToA,
                 hasA: hasA,
                 standardsA: standards.A
             });
