@@ -1667,12 +1667,12 @@ function initializeTimeStandardsGapChart() {
             const hasB = awardedStandard === 'B';
             const hasA = awardedStandard === 'A';
 
-            // Show gaps based on what's NOT YET AWARDED
-            // Only show gap if time is actually SLOWER than standard (positive gap)
-            // If BB not awarded and time slower than BB: show gap to BB
-            // If BB awarded but B not awarded and time slower than B: show gap to B
-            const displayGapToBB = !hasBB && gapToBB > 0 ? gapToBB : 0;
-            const displayGapToB = hasBB && !hasB && gapToB > 0 ? gapToB : 0;
+            // Show gaps for ANY standard not yet awarded, regardless of time
+            // Use absolute value because swimmer may be faster but award not received
+            // If BB not awarded: show absolute gap to BB
+            // If BB awarded but B not awarded: show absolute gap to B
+            const displayGapToBB = !hasBB ? Math.abs(gapToBB) : 0;
+            const displayGapToB = hasBB && !hasB ? Math.abs(gapToB) : 0;
 
             chartData.push({
                 eventType: eventType,
@@ -2022,8 +2022,9 @@ function initializeATimeGapChart() {
             // Determine if A is achieved based ONLY on what was actually awarded
             const hasA = awardedStandard === 'A';
 
-            // Only show gap if NOT awarded A AND time is slower than A standard
-            const displayGapToA = !hasA && gapToA > 0 ? gapToA : 0;
+            // Show gap for A standard if not awarded, regardless of time
+            // Use absolute value to always show positive distance
+            const displayGapToA = !hasA ? Math.abs(gapToA) : 0;
 
             chartData.push({
                 eventType: eventType,
