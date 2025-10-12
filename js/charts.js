@@ -1666,13 +1666,19 @@ function initializeTimeStandardsGapChart() {
             const hasB = awardedStandard === 'B' || awardedStandard === 'A';
             const hasA = awardedStandard === 'A';
 
+            // Show gaps based on what's NOT YET AWARDED (not mathematical calculation)
+            // If BB not awarded, show gap to BB
+            // If BB awarded but B not awarded, show gap to B
+            // Use absolute value of gap to always show positive numbers
+            const displayGapToBB = !hasBB ? Math.abs(gapToBB) : 0;
+            const displayGapToB = hasBB && !hasB ? Math.abs(gapToB) : 0;
+
             chartData.push({
                 eventType: eventType,
                 currentTime: currentTime,
-                // Keep actual calculated gaps for display
-                gapToBB: gapToBB > 0 ? gapToBB : 0, // Show positive gaps only
-                gapToB: gapToB > 0 ? gapToB : 0,     // Show positive gaps only
-                gapToA: gapToA > 0 ? gapToA : 0,     // Show positive gaps only
+                gapToBB: displayGapToBB,
+                gapToB: displayGapToB,
+                gapToA: gapToA > 0 ? gapToA : 0, // A uses mathematical gap
                 hasBB: hasBB,
                 hasB: hasB,
                 hasA: hasA,
