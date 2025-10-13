@@ -69,20 +69,24 @@ let eventData = [
     { event: "200 IM SCY", date: "2025-10-03", time: "3:06.13", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 307, age: 10 }
 ];
 
-// Time Standards from USA Swimming Motivational Times (SCY)
+// Time Standards from USA Swimming Motivational Times (SCY) - Boys 10&U
+// Source: Original motivational standards (slower times for age-group development)
+// Note: These are MOTIVATIONAL standards (easier), not competitive standards
+// In code logic: if (time <= standard), so A is fastest, B is slowest
 const timeStandards = {
     "10&U": {
-        "50 FR SCY": { "A": 34.19, "B": 41.99, "BB": 38.09 },
-        "100 FR SCY": { "A": 76.99, "B": 96.99, "BB": 86.99 },
-        "200 FR SCY": { "A": 164.99, "B": 206.29, "BB": 185.69 },
-        "50 BK SCY": { "A": 40.99, "B": 52.69, "BB": 46.79 },
-        "100 BK SCY": { "A": 87.49, "B": 110.69, "BB": 99.09 },
-        "50 BR SCY": { "A": 45.29, "B": 57.59, "BB": 51.39 },
-        "100 BR SCY": { "A": 99.59, "B": 125.59, "BB": 112.59 },
-        "50 FL SCY": { "A": 39.09, "B": 50.49, "BB": 44.79 },
-        "100 FL SCY": { "A": 92.29, "B": 124.19, "BB": 108.29 },
-        "100 IM SCY": { "A": 87.89, "B": 109.79, "BB": 98.79 },
-        "200 IM SCY": { "A": 188.89, "B": 238.09, "BB": 213.49 }
+        "50 FR SCY": { "A": 34.19, "BB": 38.09, "B": 41.99 },
+        "100 FR SCY": { "A": 76.99, "BB": 86.99, "B": 96.99 },
+        "200 FR SCY": { "A": 164.99, "BB": 185.69, "B": 206.29 },
+        "500 FR SCY": { "A": 433.89, "BB": 488.29, "B": 542.79 },  // Added: A=7:13.89, BB=8:08.29, B=9:02.79
+        "50 BK SCY": { "A": 40.99, "BB": 46.79, "B": 52.59 },
+        "100 BK SCY": { "A": 87.49, "BB": 99.09, "B": 110.69 },
+        "50 BR SCY": { "A": 45.29, "BB": 51.39, "B": 57.49 },
+        "100 BR SCY": { "A": 99.59, "BB": 112.59, "B": 125.59 },
+        "50 FL SCY": { "A": 39.09, "BB": 44.79, "B": 50.49 },
+        "100 FL SCY": { "A": 92.29, "BB": 108.29, "B": 124.19 },
+        "100 IM SCY": { "A": 87.89, "BB": 98.79, "B": 109.69 },
+        "200 IM SCY": { "A": 188.89, "BB": 213.49, "B": 238.09 }
     },
     "11-12": {
         "50 FR SCY": { "A": 30.89, "B": 35.99, "BB": 33.39 },
@@ -155,24 +159,56 @@ function secondsToTimeString(seconds) {
     return seconds.toFixed(2);
 }
 
+/**
+ * Calculate the actual time standard achieved for a given event and time
+ * @param {string} eventName - Event name (e.g., "50 FR SCY")
+ * @param {number} timeInSeconds - Time in seconds
+ * @param {string} date - Date of the event to determine age group
+ * @returns {string|null} - Time standard achieved (BB, B, A) or null
+ */
+function calculateTimeStandard(eventName, timeInSeconds, date) {
+    if (!timeInSeconds || timeInSeconds === null) return null;
+
+    // Determine age group based on date (turns 11 in January 2026)
+    const checkDate = new Date(date);
+    const birthdayMonth = new Date('2026-01-01');
+    const ageGroup = checkDate >= birthdayMonth ? '11-12' : '10&U';
+
+    // Get standards for this event and age group
+    const standards = timeStandards[ageGroup] && timeStandards[ageGroup][eventName];
+    if (!standards) return null;
+
+    // Check which standard was achieved (times must be equal to or better than the threshold)
+    // Note: In swimming, lower times are better
+    if (timeInSeconds <= standards.A) return 'A';
+    if (timeInSeconds <= standards.BB) return 'BB';
+    if (timeInSeconds <= standards.B) return 'B';
+
+    // No standard achieved
+    return null;
+}
+
 function calculatePersonalRecords() {
     const prs = {};
-    
+
     eventData.forEach(event => {
         const time = timeToSeconds(event.time);
         if (time === null) return;
-        
+
         if (!prs[event.event] || time < prs[event.event].time) {
+            // Calculate the actual time standard based on time and date
+            const calculatedStandard = calculateTimeStandard(event.event, time, event.date);
+
             prs[event.event] = {
                 time: time,
                 timeString: event.time,
                 date: event.date,
                 meet: event.meet,
-                timeStandard: event.timeStandard
+                timeStandard: calculatedStandard || 'No Standard'
             };
         }
     });
-    
+
     return prs;
 }
 
