@@ -250,7 +250,9 @@ function transformToEventData(results) {
         event: result.event_name,
         date: result.event_date,
         time: result.time_formatted || formatSecondsToTime(result.time_seconds),
-        timeStandard: result.time_standard_awarded || 'Slower than B',
+        // Use time_standard from database (A, BB, B, or NULL)
+        // Don't provide fallback - let calculateTimeStandard() handle it
+        timeStandard: result.time_standard || null,
         meet: result.meet_name || '',
         points: result.points || 0,
         age: result.age || 10
