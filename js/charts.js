@@ -24,11 +24,12 @@ function initializeOverviewChart() {
         // Calculate time standards
         const bbTimes = eventData.filter(e => e.timeStandard === 'BB').length;
         const bTimes = eventData.filter(e => e.timeStandard === 'B').length;
-        
+        const aTimes = eventData.filter(e => e.timeStandard === 'A').length;
+
         // Calculate personal records
         const prs = calculatePersonalRecords();
         const personalRecordsCount = Object.keys(prs).length;
-        
+
         // Get current age (from most recent event)
         const recentEvent = eventData.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
         const currentAge = recentEvent ? recentEvent.age : 10;
@@ -40,33 +41,39 @@ function initializeOverviewChart() {
         document.getElementById('journeyDuration').textContent = journeyYears;
         document.getElementById('totalBBTimes').textContent = bbTimes;
         document.getElementById('totalBTimes').textContent = bTimes;
+        document.getElementById('totalATimes').textContent = aTimes;
         document.getElementById('personalRecords').textContent = personalRecordsCount;
 
         // Generate recent achievements
         generateRecentAchievements();
 
-        // Create enhanced timeline with time standards
+        // Create enhanced timeline with time standards (cumulative achievements)
         const monthlyProgress = {};
         const monthlyBB = {};
         const monthlyB = {};
-        
+        const monthlyA = {};
+
         eventData.forEach(event => {
             const month = event.date.substring(0, 7);
             if (!monthlyProgress[month]) {
                 monthlyProgress[month] = 0;
                 monthlyBB[month] = 0;
                 monthlyB[month] = 0;
+                monthlyA[month] = 0;
             }
             monthlyProgress[month]++;
-            
+
+            // Count actual achievements per month
             if (event.timeStandard === 'BB') monthlyBB[month]++;
             if (event.timeStandard === 'B') monthlyB[month]++;
+            if (event.timeStandard === 'A') monthlyA[month]++;
         });
 
         const labels = Object.keys(monthlyProgress).sort();
         const totalData = labels.map(label => monthlyProgress[label]);
-        const bbData = labels.map(label => monthlyBB[label] || 0);
-        const bData = labels.map(label => monthlyB[label] || 0);
+        const bbData = labels.map(label => monthlyBB[label]);
+        const bData = labels.map(label => monthlyB[label]);
+        const aData = labels.map(label => monthlyA[label]);
 
         overviewChart = new Chart(ctx, {
             type: 'line',
@@ -96,6 +103,15 @@ function initializeOverviewChart() {
                         data: bData,
                         borderColor: '#007bff',
                         backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'A Times',
+                        data: aData,
+                        borderColor: '#ffc107',
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
                         borderWidth: 2,
                         fill: false,
                         tension: 0.4
@@ -1430,54 +1446,62 @@ function initializePersonalRecordsTable() {
 function initializeImprovementAnalytics() {
     const container = document.getElementById('improvementAnalytics');
     if (!container) return;
-    
+
     const improvements = calculateImprovements();
-    
+
     if (Object.keys(improvements).length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #666;">No improvement data available</p>';
         return;
     }
-    
-    container.innerHTML = '';
-    
+
     // Sort by most recent last date
     const sortedEvents = Object.keys(improvements).sort((a, b) => {
         return new Date(improvements[b].lastDate) - new Date(improvements[a].lastDate);
     });
-    
+
+    // Create clean table format
+    let tableHTML = '<table style="width: 100%; border-collapse: collapse; background: white;">';
+    tableHTML += `
+        <thead>
+            <tr style="background: #2a5298; color: white;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Event</th>
+                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">First Time</th>
+                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Latest Time</th>
+                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Improvement</th>
+                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Improvement %</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
     sortedEvents.forEach(event => {
         const improvement = improvements[event];
-        
-        const card = document.createElement('div');
-        card.style.cssText = `
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        const improvementValue = improvement.improvement.toFixed(2);
+        const improvementPercent = improvement.improvementPercent;
+
+        tableHTML += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">${event}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                    ${improvement.firstTime}<br>
+                    <span style="font-size: 0.85em; color: #666;">${improvement.firstDate}</span>
+                </td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                    ${improvement.lastTime}<br>
+                    <span style="font-size: 0.85em; color: #666;">${improvement.lastDate}</span>
+                </td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #28a745; font-weight: bold;">
+                    -${improvementValue}s
+                </td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #28a745; font-weight: bold;">
+                    ${improvementPercent}%
+                </td>
+            </tr>
         `;
-        
-        card.innerHTML = `
-            <div style="font-weight: bold; color: #2a5298; margin-bottom: 10px;">${event}</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div>
-                    <div style="font-size: 0.9em; color: #666;">First Time</div>
-                    <div style="font-weight: bold;">${improvement.firstTime} (${improvement.firstDate})</div>
-                </div>
-                <div>
-                    <div style="font-size: 0.9em; color: #666;">Latest Time</div>
-                    <div style="font-weight: bold;">${improvement.lastTime} (${improvement.lastDate})</div>
-                </div>
-            </div>
-            <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
-                <span style="color: #28a745; font-weight: bold; font-size: 1.1em;">
-                    Improved by ${improvement.improvement.toFixed(2)} seconds (${improvement.improvementPercent}%)
-                </span>
-            </div>
-        `;
-        
-        container.appendChild(card);
     });
+
+    tableHTML += '</tbody></table>';
+    container.innerHTML = tableHTML;
 }
 
 // Initialize AI trend analysis
@@ -1488,11 +1512,25 @@ function initializeAITrendAnalysis() {
     try {
         const analysis = analyzeSwimmingTrends();
 
-        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">';
+        let html = '<div style="display: grid; gap: 20px;">';
 
-        // Event Analysis Summary
-        html += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">';
+        // Performance Analysis Table
+        html += '<div>';
         html += '<h4 style="margin-top: 0; font-size: 1.1em;">📊 Performance Analysis</h4>';
+        html += '<table style="width: 100%; border-collapse: collapse; background: white;">';
+        html += `
+            <thead>
+                <tr style="background: #2a5298; color: white;">
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Event</th>
+                    <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Total Improvement</th>
+                    <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Improvement %</th>
+                    <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Monthly Rate</th>
+                    <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Trend</th>
+                    <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Confidence</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
 
         Object.keys(analysis.eventAnalysis).forEach(event => {
             const data = analysis.eventAnalysis[event];
@@ -1500,63 +1538,88 @@ function initializeAITrendAnalysis() {
             const confidenceColor = data.confidence === 'high' ? '#28a745' : '#ffc107';
 
             html += `
-                <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 5px;">
-                    <div style="font-weight: bold; font-size: 0.9em;">${trendIcon} ${event}</div>
-                    <div style="font-size: 0.8em; opacity: 0.9;">
-                        Improved: ${data.totalImprovement} (${data.improvementPercent}%)
-                        <br>Rate: ${data.monthlyRate}/month
-                        <span style="color: ${confidenceColor}; margin-left: 10px;">●</span> ${data.confidence} confidence
-                    </div>
-                </div>
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #333;">${event}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #333;">${data.totalImprovement}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #333;">${data.improvementPercent}%</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #333;">${data.monthlyRate}/month</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center; font-size: 1.2em; color: #333;">${trendIcon}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: ${confidenceColor}; font-weight: bold;">${data.confidence}</td>
+                </tr>
             `;
         });
-        html += '</div>';
+        html += '</tbody></table></div>';
 
-        // Monthly Targets
-        html += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">';
-        html += '<h4 style="margin-top: 0; font-size: 1.1em;">🎯 6-Month Targets</h4>';
-
-        // Show targets for the most practiced event
+        // Monthly Targets Table
         const mostPracticedEvent = Object.keys(analysis.monthlyTargets)[0];
         if (mostPracticedEvent && analysis.monthlyTargets[mostPracticedEvent]) {
-            html += `<div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">${mostPracticedEvent}</div>`;
+            html += '<div>';
+            html += '<h4 style="margin-top: 0; font-size: 1.1em;">🎯 6-Month Targets</h4>';
+            html += `<p style="font-weight: bold; margin-bottom: 10px;">${mostPracticedEvent}</p>`;
+            html += '<table style="width: 100%; border-collapse: collapse; background: white;">';
+            html += `
+                <thead>
+                    <tr style="background: #2a5298; color: white;">
+                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Month</th>
+                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Target Time</th>
+                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Improvement Needed</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
 
-            analysis.monthlyTargets[mostPracticedEvent].slice(0, 3).forEach((target, index) => {
+            analysis.monthlyTargets[mostPracticedEvent].slice(0, 6).forEach(target => {
                 const monthName = new Date(target.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
                 html += `
-                    <div style="margin-bottom: 8px; padding: 6px; background: rgba(255,255,255,0.05); border-radius: 4px; font-size: 0.8em;">
-                        ${monthName}: <strong>${target.targetTime}</strong>
-                        <span style="opacity: 0.8;">(improve by ${target.improvementNeeded})</span>
-                    </div>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #333;">${monthName}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: #2a5298;">${target.targetTime}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #333;">${target.improvementNeeded}</td>
+                    </tr>
                 `;
             });
+            html += '</tbody></table></div>';
         }
-        html += '</div>';
 
-        html += '</div>';
-
-        // Recommendations
+        // Recommendations Table
         if (analysis.recommendations.length > 0) {
-            html += '<div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">';
+            html += '<div>';
             html += '<h4 style="margin-top: 0; font-size: 1.1em;">💡 AI Recommendations</h4>';
+            html += '<table style="width: 100%; border-collapse: collapse; background: white;">';
+            html += `
+                <thead>
+                    <tr style="background: #2a5298; color: white;">
+                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd; width: 100px;">Type</th>
+                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd; width: 150px;">Event</th>
+                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Recommendation</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            const typeIcons = {
+                'maintain': '✅ Maintain',
+                'focus': '⚠️ Focus',
+                'excellent': '🏆 Excellent',
+                'review': '🔍 Review'
+            };
 
             analysis.recommendations.forEach(rec => {
-                const typeIcons = {
-                    'maintain': '✅',
-                    'focus': '⚠️',
-                    'excellent': '🏆',
-                    'review': '🔍'
-                };
+                const typeColor = rec.type === 'excellent' ? '#28a745' :
+                                 rec.type === 'focus' ? '#ffc107' : '#2a5298';
 
                 html += `
-                    <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; font-size: 0.85em;">
-                        <strong>${typeIcons[rec.type]} ${rec.event}:</strong> ${rec.message}
-                    </div>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: ${typeColor};">${typeIcons[rec.type]}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #333;">${rec.event}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${rec.message}</td>
+                    </tr>
                 `;
             });
-            html += '</div>';
+            html += '</tbody></table></div>';
         }
 
+        html += '</div>';
         container.innerHTML = html;
     } catch (error) {
         console.error('Error generating AI trend analysis:', error);
@@ -1668,8 +1731,9 @@ function initializeTimeStandardsGapChart() {
             const hasA = awardedStandard === 'A';
 
             // Show gap to BB standard if not yet awarded
-            // Use absolute value because swimmer may be faster but award not received
-            const displayGapToBB = !hasBB ? Math.abs(gapToBB) : 0;
+            // Only show positive gaps (swimmer needs to improve)
+            // If negative (already faster), show 0 because standard is already met
+            const displayGapToBB = !hasBB && gapToBB > 0 ? gapToBB : 0;
 
             chartData.push({
                 eventType: eventType,
@@ -1997,9 +2061,10 @@ function initializeATimeGapChart() {
             // Determine if A is achieved based ONLY on what was actually awarded
             const hasA = awardedStandard === 'A';
 
-            // Show gap for A standard if not awarded, regardless of time
-            // Use absolute value to always show positive distance
-            const displayGapToA = !hasA ? Math.abs(gapToA) : 0;
+            // Show gap for A standard if not awarded
+            // Only show positive gaps (swimmer needs to improve)
+            // If negative (already faster), show 0 because standard is already met
+            const displayGapToA = !hasA && gapToA > 0 ? gapToA : 0;
 
             chartData.push({
                 eventType: eventType,
