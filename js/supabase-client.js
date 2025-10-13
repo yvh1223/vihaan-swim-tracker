@@ -237,6 +237,109 @@ async function getTeamProgression(swimmerId) {
 }
 
 // ===================================
+// TIME STANDARDS OPERATIONS
+// ===================================
+
+// Cache for time standards to avoid repeated database calls
+let timeStandardsCache = null;
+
+/**
+ * Get all time standards from database
+ * Results are cached in memory for performance
+ * @returns {Promise<Array>} Array of time standard records
+ */
+async function getAllTimeStandards() {
+    try {
+        // Return cached data if available
+        if (timeStandardsCache) {
+            console.log('Using cached time standards');
+            return timeStandardsCache;
+        }
+
+        const { data, error } = await supabase
+            .from('time_standards')
+            .select('*')
+            .order('age_group, event_name');
+
+        if (error) throw error;
+
+        console.log(`Fetched ${data?.length || 0} time standards from database`);
+        timeStandardsCache = data || [];
+        return timeStandardsCache;
+    } catch (error) {
+        console.error('Error fetching time standards:', error);
+        return [];
+    }
+}
+
+/**
+ * Calculate time standard using Supabase RPC function
+ * @param {string} eventName - Event name (e.g., "50 FL")
+ * @param {number} timeSeconds - Time in seconds
+ * @param {number} age - Swimmer's age
+ * @param {string} gender - Swimmer's gender (default: 'Boys')
+ * @param {string} courseType - Course type (default: 'SCY')
+ * @returns {Promise<string|null>} Time standard (AAAA, AAA, AA, A, BB, B) or null
+ */
+async function calculateTimeStandardDB(eventName, timeSeconds, age, gender = 'Boys', courseType = 'SCY') {
+    try {
+        const { data, error } = await supabase
+            .rpc('get_current_standard', {
+                p_event_name: eventName,
+                p_time_seconds: timeSeconds,
+                p_age: age,
+                p_gender: gender,
+                p_course_type: courseType
+            });
+
+        if (error) throw error;
+
+        return data;
+    } catch (error) {
+        console.error('Error calculating time standard:', error);
+        return null;
+    }
+}
+
+/**
+ * Get next standard info using Supabase RPC function
+ * @param {string} eventName - Event name (e.g., "50 FL")
+ * @param {number} timeSeconds - Time in seconds
+ * @param {number} age - Swimmer's age
+ * @param {string} gender - Swimmer's gender (default: 'Boys')
+ * @param {string} courseType - Course type (default: 'SCY')
+ * @returns {Promise<Object|null>} Next standard info {next_level, target_time, gap_seconds, improvement_pct}
+ */
+async function getNextStandardInfo(eventName, timeSeconds, age, gender = 'Boys', courseType = 'SCY') {
+    try {
+        const { data, error } = await supabase
+            .rpc('get_next_standard_info', {
+                p_event_name: eventName,
+                p_time_seconds: timeSeconds,
+                p_age: age,
+                p_gender: gender,
+                p_course_type: courseType
+            });
+
+        if (error) throw error;
+
+        // RPC returns array with single row or empty array
+        return data && data.length > 0 ? data[0] : null;
+    } catch (error) {
+        console.error('Error getting next standard info:', error);
+        return null;
+    }
+}
+
+/**
+ * Clear time standards cache (useful when data is updated)
+ */
+function clearTimeStandardsCache() {
+    timeStandardsCache = null;
+    console.log('Time standards cache cleared');
+}
+
+// ===================================
 // DATA TRANSFORMATION HELPERS
 // ===================================
 
@@ -315,6 +418,12 @@ window.SupabaseClient = {
 
     // Team progression
     getTeamProgression,
+
+    // Time standards
+    getAllTimeStandards,
+    calculateTimeStandardDB,
+    getNextStandardInfo,
+    clearTimeStandardsCache,
 
     // Transformers
     transformToEventData,

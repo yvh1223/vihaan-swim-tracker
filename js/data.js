@@ -69,39 +69,11 @@ let eventData = [
     { event: "200 IM SCY", date: "2025-10-03", time: "3:06.13", timeStandard: "BB", meet: "2025 NT LAC Splashing Pumpkins", points: 307, age: 10 }
 ];
 
-// Time Standards from USA Swimming Motivational Times (SCY) - Boys 10&U
-// Source: Original motivational standards (slower times for age-group development)
-// Note: These are MOTIVATIONAL standards (easier), not competitive standards
-// In code logic: if (time <= standard), so A is fastest, B is slowest
-const timeStandards = {
-    "10&U": {
-        "50 FR SCY": { "A": 34.19, "BB": 38.09, "B": 41.99 },
-        "100 FR SCY": { "A": 76.99, "BB": 86.99, "B": 96.99 },
-        "200 FR SCY": { "A": 164.99, "BB": 185.69, "B": 206.29 },
-        "500 FR SCY": { "A": 433.89, "BB": 488.29, "B": 542.79 },  // Added: A=7:13.89, BB=8:08.29, B=9:02.79
-        "50 BK SCY": { "A": 40.99, "BB": 46.79, "B": 52.59 },
-        "100 BK SCY": { "A": 87.49, "BB": 99.09, "B": 110.69 },
-        "50 BR SCY": { "A": 45.29, "BB": 51.39, "B": 57.49 },
-        "100 BR SCY": { "A": 99.59, "BB": 112.59, "B": 125.59 },
-        "50 FL SCY": { "A": 39.09, "BB": 44.79, "B": 50.49 },
-        "100 FL SCY": { "A": 92.29, "BB": 108.29, "B": 124.19 },
-        "100 IM SCY": { "A": 87.89, "BB": 98.79, "B": 109.69 },
-        "200 IM SCY": { "A": 188.89, "BB": 213.49, "B": 238.09 }
-    },
-    "11-12": {
-        "50 FR SCY": { "A": 30.89, "B": 35.99, "BB": 33.39 },
-        "100 FR SCY": { "A": 67.29, "B": 78.49, "BB": 72.89 },
-        "200 FR SCY": { "A": 147.49, "B": 172.09, "BB": 159.79 },
-        "50 BK SCY": { "A": 35.69, "B": 42.19, "BB": 38.99 },
-        "100 BK SCY": { "A": 76.59, "B": 90.89, "BB": 83.69 },
-        "50 BR SCY": { "A": 39.99, "B": 47.39, "BB": 43.69 },
-        "100 BR SCY": { "A": 86.69, "B": 102.29, "BB": 94.39 },
-        "50 FL SCY": { "A": 34.49, "B": 40.99, "BB": 37.79 },
-        "100 FL SCY": { "A": 76.89, "B": 92.09, "BB": 84.49 },
-        "100 IM SCY": { "A": 76.39, "B": 89.39, "BB": 82.89 },
-        "200 IM SCY": { "A": 166.69, "B": 196.19, "BB": 181.49 }
-    }
-};
+// ===================================
+// TIME STANDARDS CACHE
+// ===================================
+// Time standards are now fetched from Supabase database
+// No more hardcoded values - all data comes from time_standards table
 
 // Chart instances
 let ganttChart, overviewChart, unifiedEventChart;
@@ -161,53 +133,97 @@ function secondsToTimeString(seconds) {
 
 /**
  * Calculate the actual time standard achieved for a given event and time
+ * Now uses Supabase database via RPC function get_current_standard
  * @param {string} eventName - Event name (e.g., "50 FR SCY")
  * @param {number} timeInSeconds - Time in seconds
- * @param {string} date - Date of the event to determine age group
- * @returns {string|null} - Time standard achieved (BB, B, A) or null
+ * @param {number} age - Swimmer's age
+ * @param {string} gender - Swimmer's gender (default: 'Boys')
+ * @returns {Promise<string|null>} - Time standard achieved (AAAA, AAA, AA, A, BB, B) or null
  */
-function calculateTimeStandard(eventName, timeInSeconds, date) {
+async function calculateTimeStandard(eventName, timeInSeconds, age, gender = 'Boys') {
     if (!timeInSeconds || timeInSeconds === null) return null;
 
-    // Determine age group based on date (turns 11 in January 2026)
-    const checkDate = new Date(date);
-    const birthdayMonth = new Date('2026-01-01');
-    const ageGroup = checkDate >= birthdayMonth ? '11-12' : '10&U';
+    // If not using Supabase, return null
+    if (!usingSupabase) {
+        console.warn('Supabase not available - time standards calculation disabled');
+        return null;
+    }
 
-    // Get standards for this event and age group
-    const standards = timeStandards[ageGroup] && timeStandards[ageGroup][eventName];
-    if (!standards) return null;
+    try {
+        // Parse event name to extract course type
+        const { courseType } = parseEventName(eventName);
 
-    // Check which standard was achieved (times must be equal to or better than the threshold)
-    // Note: In swimming, lower times are better
-    if (timeInSeconds <= standards.A) return 'A';
-    if (timeInSeconds <= standards.BB) return 'BB';
-    if (timeInSeconds <= standards.B) return 'B';
+        // Remove course type from event name for database lookup (e.g., "50 FL SCY" -> "50 FL")
+        const dbEventName = eventName.replace(/ SCY$| LCM$| SCM$/i, '').trim();
 
-    // No standard achieved
-    return null;
+        // Call Supabase RPC function
+        const standard = await window.SupabaseClient.calculateTimeStandardDB(
+            dbEventName,
+            timeInSeconds,
+            age,
+            gender,
+            courseType
+        );
+
+        return standard;
+    } catch (error) {
+        console.error('Error calculating time standard:', error);
+        return null;
+    }
 }
 
-function calculatePersonalRecords() {
+async function calculatePersonalRecords() {
     const prs = {};
 
-    eventData.forEach(event => {
+    // Get current swimmer's gender for time standard calculation
+    let swimmerGender = 'Boys';  // Default
+    let swimmerAge = 10;  // Default
+
+    if (usingSupabase && currentSwimmerId) {
+        try {
+            const swimmer = await window.SupabaseClient.getSwimmerById(currentSwimmerId);
+            if (swimmer) {
+                swimmerGender = swimmer.gender || 'Boys';
+                swimmerAge = swimmer.current_age || 10;
+            }
+        } catch (error) {
+            console.warn('Could not fetch swimmer details, using defaults');
+        }
+    }
+
+    // Process each event to find personal bests
+    for (const event of eventData) {
         const time = timeToSeconds(event.time);
-        if (time === null) return;
+        if (time === null) continue;
 
         if (!prs[event.event] || time < prs[event.event].time) {
-            // Calculate the actual time standard based on time and date
-            const calculatedStandard = calculateTimeStandard(event.event, time, event.date);
+            // Calculate the actual time standard based on time, age, and gender from database
+            let calculatedStandard = null;
+
+            if (usingSupabase) {
+                try {
+                    // Use the age from the event data for accurate standard calculation
+                    calculatedStandard = await calculateTimeStandard(
+                        event.event,
+                        time,
+                        event.age || swimmerAge,  // Use event age if available, otherwise swimmer's current age
+                        swimmerGender
+                    );
+                } catch (error) {
+                    console.error('Error calculating standard for', event.event, error);
+                }
+            }
 
             prs[event.event] = {
                 time: time,
                 timeString: event.time,
                 date: event.date,
                 meet: event.meet,
+                age: event.age || swimmerAge,
                 timeStandard: calculatedStandard || 'No Standard'
             };
         }
-    });
+    }
 
     return prs;
 }
