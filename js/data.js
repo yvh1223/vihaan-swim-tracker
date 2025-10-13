@@ -440,3 +440,147 @@ function getGoalAnalysis(eventType) {
         monthlyImprovementNeeded: gap > 0 ? secondsToTimeString(gap / 5) : null // 5 months till March
     };
 }
+
+// ===================================
+// SUPABASE INTEGRATION
+// ===================================
+
+// Global state for Supabase integration
+let currentSwimmerId = null;
+let swimmers = [];
+let usingSupabase = false;
+
+/**
+ * Initialize the application - try Supabase first, fallback to hardcoded data
+ */
+async function initializeApp() {
+    updateDataIndicator('loading', '📊 Loading data...');
+
+    try {
+        // Initialize Supabase client
+        await window.SupabaseClient.init();
+
+        // Try to load swimmers from Supabase
+        swimmers = await window.SupabaseClient.getAllSwimmers();
+
+        if (swimmers && swimmers.length > 0) {
+            usingSupabase = true;
+            console.log('✅ Connected to Supabase database');
+
+            // Populate swimmer dropdown
+            populateSwimmerDropdown(swimmers);
+
+            // Load data for first swimmer
+            if (swimmers.length > 0) {
+                await loadSwimmerData(swimmers[0].id);
+            }
+
+            updateDataIndicator('success', `🗄️ Database (${swimmers[0].full_name})`);
+            return true;
+        }
+    } catch (error) {
+        console.warn('⚠️ Supabase not available, using local data:', error);
+    }
+
+    // Fallback to hardcoded data
+    usingSupabase = false;
+    populateSwimmerDropdown([{
+        id: 'local',
+        full_name: 'Vihaan H Huchchannavar (Local Data)',
+        current_age: 10
+    }]);
+
+    updateDataIndicator('success', '📁 Local Data Mode');
+    return false;
+}
+
+/**
+ * Load data for a specific swimmer from Supabase
+ */
+async function loadSwimmerData(swimmerId) {
+    try {
+        updateDataIndicator('loading', '🔄 Loading swimmer data...');
+        currentSwimmerId = swimmerId;
+
+        if (!usingSupabase || swimmerId === 'local') {
+            // Use hardcoded local data
+            updateDataIndicator('success', '📁 Local Data Mode');
+            refreshAllCharts();
+            return;
+        }
+
+        // Fetch from Supabase
+        const [competitionResults, teamProgression] = await Promise.all([
+            window.SupabaseClient.getCompetitionResults(swimmerId),
+            window.SupabaseClient.getTeamProgression(swimmerId)
+        ]);
+
+        // Transform and update global data
+        eventData = window.SupabaseClient.transformToEventData(competitionResults);
+        teamData = window.SupabaseClient.transformToTeamData(teamProgression);
+
+        console.log(`✅ Loaded ${eventData.length} events and ${teamData.length} teams`);
+
+        // Get swimmer name for indicator
+        const swimmer = swimmers.find(s => s.id === swimmerId);
+        updateDataIndicator('success', `🗄️ Database (${swimmer?.full_name || 'Unknown'})`);
+
+        // Refresh all charts with new data
+        refreshAllCharts();
+
+    } catch (error) {
+        console.error('Error loading swimmer data:', error);
+        updateDataIndicator('error', '❌ Error loading data');
+    }
+}
+
+/**
+ * Populate the swimmer dropdown
+ */
+function populateSwimmerDropdown(swimmerList) {
+    const select = document.getElementById('swimmerSelect');
+    if (!select) return;
+
+    select.innerHTML = '';
+
+    swimmerList.forEach(swimmer => {
+        const option = document.createElement('option');
+        option.value = swimmer.id;
+        option.textContent = swimmer.full_name;
+        select.appendChild(option);
+    });
+
+    // Set initial selection
+    if (swimmerList.length > 0) {
+        select.value = swimmerList[0].id;
+        currentSwimmerId = swimmerList[0].id;
+    }
+}
+
+/**
+ * Update data source indicator
+ */
+function updateDataIndicator(status, text) {
+    const indicator = document.getElementById('dataSourceIndicator');
+    if (!indicator) return;
+
+    indicator.className = 'data-source-indicator';
+    if (status === 'loading') {
+        indicator.classList.add('loading');
+    } else if (status === 'error') {
+        indicator.classList.add('error');
+    }
+
+    indicator.textContent = text;
+}
+
+/**
+ * Handle swimmer selection change
+ */
+async function onSwimmerChange() {
+    const select = document.getElementById('swimmerSelect');
+    if (!select) return;
+
+    const swimmerId = select.value;
+    await loadSwimmerData(swimmerId);
+}

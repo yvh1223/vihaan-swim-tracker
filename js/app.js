@@ -158,14 +158,21 @@ function updateDataSummary() {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     try {
         console.log('Initializing application...');
+
+        // Initialize Supabase connection or fallback to local data
+        await initializeApp();
+
+        // Initialize the overview chart after data is loaded
         initializeOverviewChart();
         updateDataSummary();
+
         console.log('Application initialized successfully');
     } catch (error) {
         console.error('Error during initialization:', error);
+        updateDataIndicator('error', '❌ Initialization failed');
     }
 });
 

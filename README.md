@@ -59,20 +59,20 @@ Two specialized charts to track progress toward achievement goals:
 
 ```
 vihaan-swim-tracker/
-├── index.html                        # Main HTML file (website)
-├── css/                              # Stylesheets
+├── index.html                           # Main HTML file (website)
+├── css/                                 # Stylesheets
 ├── js/
-│   ├── data.js                       # Data storage and initial datasets
-│   ├── charts.js                     # Chart initialization functions
-│   └── app.js                        # Main application logic
+│   ├── data.js                          # Data storage and initial datasets
+│   ├── charts.js                        # Chart initialization functions
+│   └── app.js                           # Main application logic
 ├── data/
-│   ├── team_progression.csv          # Team progression raw data
-│   └── event_times.csv               # Event times raw data
-├── supabase-schema-normalized.sql    # Database schema (PostgreSQL)
-├── supabaseSetup-normalized.js       # Database import script
-├── timeStandards.js                  # USA Swimming standards calculator
-├── .env                              # Supabase credentials (not in git)
-└── package.json                      # Node dependencies
+│   ├── team_progression.csv             # Team progression raw data
+│   └── event_times.csv                  # Event times raw data (includes Oct 2025 data)
+├── supabase-schema-multi-swimmer.sql    # Multi-swimmer database schema (PostgreSQL)
+├── supabaseSetup-multi-swimmer.js       # Multi-swimmer database import script
+├── timeStandards.js                     # USA Swimming standards calculator
+├── .env                                 # Supabase credentials (not in git)
+└── package.json                         # Node dependencies
 ```
 
 ## Getting Started
@@ -185,22 +185,158 @@ Gap = Current Best Time - Standard Time
 
 This application is deployed on GitHub Pages and automatically updates when changes are pushed to the main branch via GitHub Actions.
 
-**Live URL**: Check your GitHub repository settings for the deployed URL (typically `https://[username].github.io/vihaan-swim-tracker/`)
+**Live URL**: https://yvh1223.github.io/vihaan-swim-tracker/
+
+## Database Backend (Supabase)
+
+The project includes a **multi-swimmer normalized PostgreSQL database** hosted on Supabase for advanced analytics and data management.
+
+### Why Database?
+- ✅ **Multi-Swimmer Support**: Track multiple swimmers (family members, teammates) in one database
+- ✅ **No Data Duplication**: Stores only facts, calculates insights on-demand
+- ✅ **Always Accurate**: Gap tracking and personal bests calculated in real-time per swimmer
+- ✅ **Smart Functions**: PostgreSQL functions determine next goals correctly
+- ✅ **Efficient**: 44% smaller data footprint than denormalized approach
+- ✅ **Scalable**: Ready for mobile apps, real-time sync, and team management
+
+### Database Features
+
+**Tables** (Store Facts Only):
+- `swimmers` - Master table with swimmer profiles (name, age, LSC, club)
+- `competition_results` - Swim meet times, dates, meets, LSC, time standards awarded
+- `time_standards` - USA Swimming standards (AAAA → B) for age 10, includes LCM
+- `practice_sessions` - Daily practice tracking per swimmer
+- `improvement_goals` - Goal setting and progress per swimmer
+- `team_progression` - Team history timeline per swimmer
+
+**Views** (Derived Data per Swimmer):
+- `progress_report` - Latest times with correct gap analysis (filtered by swimmer_id)
+- `personal_bests` - Best times per event per swimmer (automatically derived)
+- `latest_times_per_event` - Most recent swims per swimmer
+- `competition_results_with_standards` - All results with calculations
+
+**Functions** (Smart Calculations):
+- `get_current_standard()` - Determines current level (AAAA, AAA, AA, A, BB, B, Below B)
+- `get_next_standard_info()` - Returns **next immediate goal**, not top standard
+  - Example: B → BB → A → AA → AAA → AAAA (correct progression ✅)
+  - Not: B → AAAA (incorrect ❌)
+- `format_time()` - Converts seconds to MM:SS.SS format
+
+**Key Enhancements**:
+- **Relational Design**: All tables linked to swimmers table via `swimmer_id` foreign key
+- **CASCADE Deletion**: Removing a swimmer automatically cleans up all related data
+- **Generated Columns**: Full name auto-generated from first and last name
+- **LSC Tracking**: Local Swim Committee stored for both swimmers and meets
+- **Actual Awards**: Stores time standards actually awarded at meets (not calculated)
+
+### Quick Start
+
+1. **Create Supabase Project**: https://supabase.com (free tier)
+
+2. **Run Schema**:
+   ```bash
+   # In Supabase SQL Editor
+   # Copy entire contents of supabase-schema-multi-swimmer.sql
+   # Paste and click "Run"
+   ```
+
+3. **Configure `.env`**:
+   ```env
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   ```
+
+4. **Import Data**:
+   ```bash
+   npm install
+   node supabaseSetup-multi-swimmer.js
+   ```
+
+   The import script will:
+   - Create swimmer profile for Vihaan H Huchchannavar
+   - Import all competition results (including October 2025 meets)
+   - Import team progression history
+   - Associate all data with the swimmer's ID
+
+### Sample Queries
+
+**Get Progress Report for a Swimmer**:
+```sql
+-- Replace 1 with actual swimmer_id
+SELECT * FROM progress_report
+WHERE swimmer_id = 1
+ORDER BY event_name;
+```
+
+**Find Events Closest to Next Goal**:
+```sql
+-- Replace 1 with actual swimmer_id
+SELECT event_name, current_standard, next_standard, gap_seconds
+FROM progress_report
+WHERE swimmer_id = 1 AND next_standard IS NOT NULL
+ORDER BY gap_seconds ASC
+LIMIT 5;
+```
+
+**View All Times for an Event**:
+```sql
+-- Replace 1 with actual swimmer_id
+SELECT event_date, time_formatted, current_standard, next_standard
+FROM competition_results_with_standards
+WHERE swimmer_id = 1 AND event_name = '100 FR SCY'
+ORDER BY event_date DESC;
+```
+
+**List All Swimmers**:
+```sql
+SELECT id, full_name, current_age, lsc, club, active
+FROM swimmers
+ORDER BY full_name;
+```
+
+**Add New Swimmer**:
+```sql
+INSERT INTO swimmers (first_name, last_name, current_age, lsc, club)
+VALUES ('John', 'Doe', 11, 'NT', 'Sample Swim Club')
+RETURNING id, full_name;
+```
+
+### Documentation
+- **SUPABASE_README.md** - Basic setup guide
+- **NORMALIZED_SCHEMA_README.md** - Detailed schema documentation and benefits
 
 ## Future Enhancements
 
-- [ ] Integration with USA Swimming database for automatic time standards updates
-- [ ] Goal setting and tracking with projected improvement timelines
+**Completed** ✅:
+- [x] Supabase database with normalized multi-swimmer schema
+- [x] Multi-swimmer support with relational design
+- [x] Automatic gap calculation with correct next-standard logic
+- [x] LSC and time standard tracking
+- [x] LCM time standards support
+- [x] October 2025 meet data integration
+- [x] GitHub Pages deployment
+
+**Planned** 📋:
+- [ ] Connect website to Supabase backend for real-time data
+- [ ] Multi-swimmer UI with swimmer selection
+- [ ] Practice session tracking and analysis
+- [ ] Goal setting UI with progress visualization
 - [ ] Performance predictions based on historical improvement trends
-- [ ] Export charts and reports to PDF for meet preparation and reviews
-- [ ] Enhanced mobile app experience with offline support
-- [ ] Coach and parent sharing capabilities with custom views
+- [ ] Export charts and reports to PDF for meet preparation
+- [ ] Mobile app with offline support
+- [ ] Coach and parent sharing capabilities
 - [ ] Comparison with age group averages and peer performance
-- [ ] Training log integration to correlate practice with performance
+- [ ] Integration with USA Swimming database for automatic time standards updates
+- [ ] Family dashboard showing multiple swimmers side-by-side
 
 ## Support
 
-For issues or questions, please check the browser console for error messages and ensure all CSV files follow the exact format specified in the templates.
+For issues or questions:
+- **Website**: Check browser console for error messages
+- **CSV Files**: Ensure files follow exact format in templates
+- **Database**: See `NORMALIZED_SCHEMA_README.md` for troubleshooting
+- **Setup**: See `SUPABASE_README.md` for database setup guide
 
 ---
 
