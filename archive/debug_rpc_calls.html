@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug RPC Function Calls</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .button:hover { background: #1e3c72; }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #2a5298; }
+    </style>
+</head>
+<body>
+    <h1>Debug RPC Function Calls</h1>
+    <p>Testing what the progress_report view is passing to the RPC functions.</p>
+
+    <button class="button" onclick="debugRPC()">Debug RPC Calls</button>
+
+    <h2>Output:</h2>
+    <pre id="output"></pre>
+
+    <script>
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s';
+
+        const supabase = window.supabase.createClient(
+            'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            ANON_KEY
+        );
+
+        const output = document.getElementById('output');
+
+        function log(message, className = 'info') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.textContent = message;
+            output.appendChild(line);
+        }
+
+        async function debugRPC() {
+            output.innerHTML = '';
+
+            try {
+                log('1. Getting latest times from competition results...', 'info');
+
+                // Get the latest_times_per_event data that progress_report uses
+                const { data: latestTimes, error: ltError } = await supabase
+                    .from('latest_times_per_event')
+                    .select('*')
+                    .eq('swimmer_id', 1)
+                    .limit(5);
+
+                if (ltError) throw ltError;
+
+                log(`   Found ${latestTimes.length} events`, 'success');
+                log('', 'info');
+
+                // For each event, manually call the RPC function with the same parameters
+                for (const event of latestTimes) {
+                    log(`Testing: ${event.event_name}`, 'info');
+                    log(`  Time: ${event.time_seconds}s`, 'info');
+                    log(`  Course: ${event.course_type || 'NULL'}`, 'info');
+                    log('', 'info');
+
+                    // Call get_current_standard exactly like progress_report does
+                    const { data: standard, error: stdError } = await supabase
+                        .rpc('get_current_standard', {
+                            p_event_name: event.event_name,
+                            p_time_seconds: event.time_seconds,
+                            p_age: 10,
+                            p_gender: 'Boys',
+                            p_course_type: event.course_type || 'SCY'
+                        });
+
+                    if (stdError) {
+                        log(`  ❌ RPC Error: ${stdError.message}`, 'error');
+                        log(`  Error details: ${JSON.stringify(stdError)}`, 'error');
+                    } else {
+                        log(`  Returned: ${standard || 'NULL'}`, standard ? 'success' : 'error');
+                    }
+
+                    // Now check what's in time_standards for this event
+                    const { data: tsData, error: tsError } = await supabase
+                        .from('time_standards')
+                        .select('event_name, age_group, a_standard, bb_standard, b_standard')
+                        .eq('event_name', event.event_name)
+                        .eq('age_group', '10 & under')
+                        .eq('gender', 'Boys')
+                        .eq('course_type', event.course_type || 'SCY');
+
+                    if (tsError) {
+                        log(`  ❌ Time standards query error: ${tsError.message}`, 'error');
+                    } else if (!tsData || tsData.length === 0) {
+                        log(`  ⚠️  NO MATCHING TIME STANDARD FOUND IN DATABASE!`, 'error');
+                        log(`     Looking for: event_name="${event.event_name}", age="10 & under", gender="Boys", course="${event.course_type || 'SCY'}"`, 'error');
+
+                        // Try to find what event names DO exist
+                        const { data: similar, error: simError } = await supabase
+                            .from('time_standards')
+                            .select('event_name')
+                            .ilike('event_name', `%${event.event_name.split(' ')[1]}%`)
+                            .eq('age_group', '10 & under')
+                            .limit(5);
+
+                        if (!simError && similar.length > 0) {
+                            log(`     Similar events in DB: ${similar.map(s => s.event_name).join(', ')}`, 'info');
+                        }
+                    } else {
+                        log(`  ✅ Found time standard in DB:`, 'success');
+                        log(`     B=${tsData[0].b_standard}s, BB=${tsData[0].bb_standard}s, A=${tsData[0].a_standard}s`, 'info');
+                    }
+
+                    log('', 'info');
+                    log('─────────────────────────────────────', 'info');
+                    log('', 'info');
+                }
+
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

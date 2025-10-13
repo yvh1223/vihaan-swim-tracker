@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check latest_times_per_event Structure</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .button:hover { background: #1e3c72; }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #2a5298; }
+    </style>
+</head>
+<body>
+    <h1>Check latest_times_per_event View Structure</h1>
+
+    <button class="button" onclick="checkStructure()">Check Structure</button>
+
+    <h2>Output:</h2>
+    <pre id="output"></pre>
+
+    <script>
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s';
+
+        const supabase = window.supabase.createClient(
+            'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            ANON_KEY
+        );
+
+        const output = document.getElementById('output');
+
+        function log(message, className = 'info') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.textContent = message;
+            output.appendChild(line);
+        }
+
+        async function checkStructure() {
+            output.innerHTML = '';
+
+            try {
+                log('Fetching data from latest_times_per_event...', 'info');
+                log('', 'info');
+
+                const { data, error } = await supabase
+                    .from('latest_times_per_event')
+                    .select('*')
+                    .eq('swimmer_id', 1)
+                    .limit(1);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    log('No data found in latest_times_per_event', 'error');
+                    return;
+                }
+
+                log('✅ Found data! Here are the available columns:', 'success');
+                log('', 'info');
+
+                const columns = Object.keys(data[0]);
+                columns.forEach(col => {
+                    log(`  - ${col}: ${typeof data[0][col]} = ${JSON.stringify(data[0][col])}`, 'info');
+                });
+
+                log('', 'info');
+                log('Full sample record:', 'info');
+                log(JSON.stringify(data[0], null, 2), 'info');
+
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

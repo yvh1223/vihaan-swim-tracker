@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify A Time Standards</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #2a5298;
+            color: white;
+        }
+        .a-time { background: #fff3cd; font-weight: bold; }
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .button:hover { background: #1e3c72; }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Verify A Time Standards</h1>
+    <p>This tool will check the 6 'A' times found and verify them against the time_standards table.</p>
+
+    <button class="button" onclick="verifyATimes()">Check A Times</button>
+
+    <div id="output"></div>
+
+    <script>
+        const SUPABASE_CONFIG = {
+            url: 'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+        };
+
+        const supabase = window.supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.anonKey
+        );
+
+        async function verifyATimes() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<h2>Loading...</h2>';
+
+            try {
+                // Get all A times
+                const { data: aTimes, error: aError } = await supabase
+                    .from('competition_results')
+                    .select('id, event_name, time_seconds, time_formatted, time_standard, age, event_date, meet_name')
+                    .eq('swimmer_id', 1)
+                    .eq('time_standard', 'A')
+                    .order('event_date', { ascending: false });
+
+                if (aError) throw aError;
+
+                let html = `<h2>Found ${aTimes.length} 'A' Time Standards</h2>`;
+                html += '<table><thead><tr>';
+                html += '<th>Date</th><th>Event</th><th>Time</th><th>Age</th><th>10&U A Standard</th><th>Comparison</th><th>Meet</th>';
+                html += '</tr></thead><tbody>';
+
+                // For each A time, fetch the corresponding standard
+                for (const result of aTimes) {
+                    // Remove course type from event name
+                    const eventName = result.event_name.replace(/ (SCY|LCM|SCM)$/i, '');
+
+                    // Get the A standard for this event
+                    const { data: standards, error: stdError } = await supabase
+                        .from('time_standards')
+                        .select('a_standard, age_group, gender')
+                        .eq('event_name', eventName)
+                        .eq('age_group', '10 & under')
+                        .eq('gender', 'Boys')
+                        .eq('course_type', 'SCY')
+                        .single();
+
+                    const rowClass = 'a-time';
+
+                    if (stdError || !standards) {
+                        html += `<tr class="${rowClass}">`;
+                        html += `<td>${result.event_date}</td>`;
+                        html += `<td>${result.event_name}</td>`;
+                        html += `<td>${result.time_formatted || result.time_seconds + 's'}</td>`;
+                        html += `<td>${result.age}</td>`;
+                        html += `<td colspan="2" style="color: red;">No standard found in database!</td>`;
+                        html += `<td>${result.meet_name}</td>`;
+                        html += '</tr>';
+                    } else {
+                        const meetsStandard = result.time_seconds <= standards.a_standard;
+                        const diff = (result.time_seconds - standards.a_standard).toFixed(2);
+                        const comparison = meetsStandard
+                            ? `✅ YES (${Math.abs(diff)}s faster)`
+                            : `❌ NO (${diff}s slower)`;
+
+                        html += `<tr class="${rowClass}">`;
+                        html += `<td>${result.event_date}</td>`;
+                        html += `<td>${result.event_name}</td>`;
+                        html += `<td>${result.time_formatted || result.time_seconds + 's'}</td>`;
+                        html += `<td>${result.age}</td>`;
+                        html += `<td>${formatTime(standards.a_standard)} (${standards.a_standard}s)</td>`;
+                        html += `<td style="${meetsStandard ? 'color: green;' : 'color: red;'}">${comparison}</td>`;
+                        html += `<td style="font-size: 0.85em;">${result.meet_name}</td>`;
+                        html += '</tr>';
+                    }
+                }
+
+                html += '</tbody></table>';
+
+                // Add explanation
+                html += '<div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 20px;">';
+                html += '<h3>Analysis:</h3>';
+                html += '<ul>';
+                html += '<li>If times show ✅ YES, they legitimately meet the A standard and Vihaan HAS achieved A times!</li>';
+                html += '<li>If times show ❌ NO, the database calculation is incorrect and needs fixing.</li>';
+                html += '<li>The comparison shows how many seconds faster (negative) or slower (positive) than the A standard.</li>';
+                html += '</ul>';
+                html += '</div>';
+
+                output.innerHTML = html;
+
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        }
+
+        function formatTime(seconds) {
+            if (seconds >= 60) {
+                const mins = Math.floor(seconds / 60);
+                const secs = (seconds % 60).toFixed(2);
+                return `${mins}:${secs.padStart(5, '0')}`;
+            }
+            return seconds.toFixed(2);
+        }
+    </script>
+</body>
+</html>

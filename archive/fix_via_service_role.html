@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix A Times via Service Role</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .button:hover { background: #c82333; }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #2a5298; }
+        .warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>Fix A Times Using Service Role Key</h1>
+    <p>Using the service role key which has full database permissions.</p>
+
+    <button class="button" onclick="fixWithServiceRole()" id="fixBtn">Fix Using Service Role</button>
+
+    <h2>Output:</h2>
+    <pre id="output"></pre>
+
+    <script>
+        // Service role key - has full permissions
+        const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDI4OTczMCwiZXhwIjoyMDc1ODY1NzMwfQ.yeogkX6imUHwudhlaIDpsAZzhwEXO8uuegTdrFKEZoA';
+
+        const supabase = window.supabase.createClient(
+            'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            SERVICE_ROLE_KEY
+        );
+
+        const output = document.getElementById('output');
+
+        function log(message, className = 'info') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.textContent = message;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function fixWithServiceRole() {
+            const btn = document.getElementById('fixBtn');
+            btn.disabled = true;
+            output.innerHTML = '';
+
+            try {
+                log('🔐 Using service role key with full permissions...', 'info');
+                log('🔍 Finding records with incorrect A time standards...', 'info');
+
+                // Find all records marked as 'A'
+                const { data: aRecords, error: findError } = await supabase
+                    .from('competition_results')
+                    .select('id, event_name, time_seconds, age, course_type, time_standard')
+                    .eq('swimmer_id', 1)
+                    .eq('time_standard', 'A');
+
+                if (findError) throw findError;
+
+                log(`Found ${aRecords.length} records marked as 'A'`, 'warning');
+                log('', 'info');
+
+                if (aRecords.length === 0) {
+                    log('✅ No incorrect A times found!', 'success');
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Get swimmer gender
+                const { data: swimmer, error: swimmerError } = await supabase
+                    .from('swimmers')
+                    .select('gender')
+                    .eq('id', 1)
+                    .single();
+
+                if (swimmerError) throw swimmerError;
+                const gender = swimmer.gender || 'Boys';
+
+                // Fix each record
+                let fixed = 0;
+                let errors = 0;
+
+                for (const record of aRecords) {
+                    try {
+                        const eventName = record.event_name.replace(/ (SCY|LCM|SCM)$/i, '');
+
+                        log(`Fixing: ${record.event_name} (${record.time_seconds}s)`, 'info');
+
+                        // Calculate correct standard
+                        const { data: correctStandard, error: rpcError } = await supabase
+                            .rpc('get_current_standard', {
+                                p_event_name: eventName,
+                                p_time_seconds: record.time_seconds,
+                                p_age: record.age,
+                                p_gender: gender,
+                                p_course_type: record.course_type
+                            });
+
+                        if (rpcError) {
+                            log(`  ❌ RPC Error: ${rpcError.message}`, 'error');
+                            errors++;
+                            continue;
+                        }
+
+                        log(`  Was: 'A' → Should be: '${correctStandard}'`, 'info');
+
+                        // Update with service role permissions
+                        const { data: updateData, error: updateError } = await supabase
+                            .from('competition_results')
+                            .update({ time_standard: correctStandard })
+                            .eq('id', record.id)
+                            .select();
+
+                        if (updateError) {
+                            log(`  ❌ Update Error: ${updateError.message}`, 'error');
+                            log(`  Error details: ${JSON.stringify(updateError)}`, 'error');
+                            errors++;
+                        } else {
+                            log(`  ✅ Successfully updated to '${correctStandard}'`, 'success');
+                            log(`  Confirmed: ${updateData?.length || 0} row(s) affected`, 'success');
+                            fixed++;
+                        }
+
+                        log('', 'info');
+
+                    } catch (err) {
+                        log(`  ❌ Unexpected error: ${err.message}`, 'error');
+                        errors++;
+                    }
+                }
+
+                log('════════════════════════════════════', 'info');
+                log(`✅ Fix complete!`, 'success');
+                log(`   Fixed: ${fixed} records`, 'success');
+                if (errors > 0) {
+                    log(`   Errors: ${errors} records`, 'error');
+                }
+                log('', 'info');
+
+                // Verify
+                const { data: verifyResults, error: verifyError } = await supabase
+                    .from('competition_results')
+                    .select('time_standard')
+                    .eq('swimmer_id', 1);
+
+                if (!verifyError) {
+                    const counts = {};
+                    verifyResults.forEach(r => {
+                        const std = r.time_standard || 'NULL';
+                        counts[std] = (counts[std] || 0) + 1;
+                    });
+
+                    log('═══════════════════════════════════════', 'info');
+                    log('Time Standard Counts:', 'info');
+                    Object.keys(counts).sort().forEach(std => {
+                        const className = std === 'A' ? 'error' : 'success';
+                        log(`  ${std}: ${counts[std]}`, className);
+                    });
+
+                    if (!counts['A']) {
+                        log('', 'info');
+                        log('✅✅✅ SUCCESS! ✅✅✅', 'success');
+                        log('   All A times corrected to BB!', 'success');
+                        log('   Refresh the main page to see 0 A Times.', 'success');
+                    }
+                }
+
+            } catch (error) {
+                log(`❌ Fatal error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

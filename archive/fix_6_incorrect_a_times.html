@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix 6 Incorrect A Times</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .button:hover { background: #c82333; }
+        .button.verify {
+            background: #28a745;
+        }
+        .button.verify:hover { background: #218838; }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #2a5298; }
+        .warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>Fix 6 Incorrect 'A' Time Standards</h1>
+    <p>This will specifically target and fix the 6 records that are incorrectly marked as 'A' time standards.</p>
+
+    <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0; border: 2px solid #ffc107;">
+        <h3>⚠️ What This Does:</h3>
+        <ol>
+            <li>Finds all records with time_standard = 'A' for swimmer 1</li>
+            <li>Recalculates the correct standard for each using get_current_standard()</li>
+            <li>Updates only those 6 records to their correct values (should all become 'BB')</li>
+            <li>Verifies the fix by counting time standards again</li>
+        </ol>
+    </div>
+
+    <button class="button" onclick="fixIncorrectATimes()" id="fixBtn">Fix the 6 Incorrect A Times</button>
+    <button class="button verify" onclick="verifyFix()" id="verifyBtn">Verify Fix</button>
+
+    <h2>Output:</h2>
+    <pre id="output"></pre>
+
+    <script>
+        const SUPABASE_CONFIG = {
+            url: 'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+        };
+
+        const supabase = window.supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.anonKey
+        );
+
+        const output = document.getElementById('output');
+
+        function log(message, className = 'info') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.textContent = message;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function fixIncorrectATimes() {
+            const btn = document.getElementById('fixBtn');
+            btn.disabled = true;
+            output.innerHTML = '';
+
+            try {
+                log('🔍 Finding records with incorrect A time standards...', 'info');
+
+                // Find all records marked as 'A'
+                const { data: aRecords, error: findError } = await supabase
+                    .from('competition_results')
+                    .select('id, event_name, time_seconds, age, course_type, time_standard')
+                    .eq('swimmer_id', 1)
+                    .eq('time_standard', 'A');
+
+                if (findError) throw findError;
+
+                log(`Found ${aRecords.length} records marked as 'A'`, 'warning');
+                log('', 'info');
+
+                if (aRecords.length === 0) {
+                    log('✅ No incorrect A times found! Database is already correct.', 'success');
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Get swimmer gender
+                const { data: swimmer, error: swimmerError } = await supabase
+                    .from('swimmers')
+                    .select('gender')
+                    .eq('id', 1)
+                    .single();
+
+                if (swimmerError) throw swimmerError;
+                const gender = swimmer.gender || 'Boys';
+
+                // Fix each record
+                let fixed = 0;
+                let errors = 0;
+
+                for (const record of aRecords) {
+                    try {
+                        // Remove course type from event name
+                        const eventName = record.event_name.replace(/ (SCY|LCM|SCM)$/i, '');
+
+                        log(`Fixing: ${record.event_name} (${record.time_seconds}s)`, 'info');
+
+                        // Calculate correct standard
+                        const { data: correctStandard, error: rpcError } = await supabase
+                            .rpc('get_current_standard', {
+                                p_event_name: eventName,
+                                p_time_seconds: record.time_seconds,
+                                p_age: record.age,
+                                p_gender: gender,
+                                p_course_type: record.course_type
+                            });
+
+                        if (rpcError) {
+                            log(`  ❌ Error calculating: ${rpcError.message}`, 'error');
+                            errors++;
+                            continue;
+                        }
+
+                        log(`  Was: 'A' → Should be: '${correctStandard}'`, 'info');
+
+                        // Update the record
+                        const { error: updateError } = await supabase
+                            .from('competition_results')
+                            .update({ time_standard: correctStandard })
+                            .eq('id', record.id);
+
+                        if (updateError) {
+                            log(`  ❌ Error updating: ${updateError.message}`, 'error');
+                            errors++;
+                        } else {
+                            log(`  ✅ Updated to '${correctStandard}'`, 'success');
+                            fixed++;
+                        }
+
+                        log('', 'info');
+
+                    } catch (err) {
+                        log(`  ❌ Unexpected error: ${err.message}`, 'error');
+                        errors++;
+                    }
+                }
+
+                log('════════════════════════════════════', 'info');
+                log(`✅ Fix complete!`, 'success');
+                log(`   Fixed: ${fixed} records`, 'success');
+                if (errors > 0) {
+                    log(`   Errors: ${errors} records`, 'error');
+                }
+                log('', 'info');
+
+                // Verify the fix
+                await verifyFix();
+
+            } catch (error) {
+                log(`❌ Fatal error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function verifyFix() {
+            try {
+                log('═══════════════════════════════════════', 'info');
+                log('🔍 Verifying time standards...', 'info');
+                log('', 'info');
+
+                // Count by time_standard
+                const { data: results, error } = await supabase
+                    .from('competition_results')
+                    .select('time_standard')
+                    .eq('swimmer_id', 1);
+
+                if (error) throw error;
+
+                const counts = {};
+                results.forEach(r => {
+                    const std = r.time_standard || 'NULL';
+                    counts[std] = (counts[std] || 0) + 1;
+                });
+
+                log('Time Standard Counts:', 'info');
+                Object.keys(counts).sort().forEach(std => {
+                    const className = std === 'A' ? 'error' : 'success';
+                    log(`  ${std}: ${counts[std]}`, className);
+                });
+
+                log('', 'info');
+
+                if (counts['A']) {
+                    log(`⚠️  WARNING: Still found ${counts['A']} 'A' time standards!`, 'error');
+                    log('   These may need manual investigation.', 'warning');
+                } else {
+                    log('✅✅✅ VERIFICATION PASSED! ✅✅✅', 'success');
+                    log('   All A time standards have been corrected to BB!', 'success');
+                    log('   Vihaan correctly has 0 A times.', 'success');
+                    log('', 'info');
+                    log('🎉 You can now refresh the main swim tracker page!', 'success');
+                    log('   The overview should show 0 A Times.', 'success');
+                }
+
+            } catch (error) {
+                log(`❌ Verification error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

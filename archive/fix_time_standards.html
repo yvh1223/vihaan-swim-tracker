@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Time Standards in Database</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background: #1e3c72;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #2a5298; }
+    </style>
+</head>
+<body>
+    <h1>Fix Time Standards in Database</h1>
+    <p>This tool will recalculate all time_standard values in the competition_results table using the database RPC function get_current_standard().</p>
+
+    <button class="button" onclick="fixTimeStandards()" id="fixBtn">Recalculate All Time Standards</button>
+    <button class="button" onclick="verifyResults()" id="verifyBtn">Verify Results</button>
+
+    <h2>Output:</h2>
+    <pre id="output"></pre>
+
+    <script>
+        const SUPABASE_CONFIG = {
+            url: 'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+        };
+
+        const supabase = window.supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.anonKey
+        );
+
+        const output = document.getElementById('output');
+
+        function log(message, className = 'info') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.textContent = message;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function fixTimeStandards() {
+            const btn = document.getElementById('fixBtn');
+            btn.disabled = true;
+            output.innerHTML = '';
+
+            try {
+                log('Starting time standard recalculation...', 'info');
+
+                // Fetch all competition results for swimmer 1
+                const { data: results, error: fetchError } = await supabase
+                    .from('competition_results')
+                    .select('id, event_name, time_seconds, age, course_type')
+                    .eq('swimmer_id', 1);
+
+                if (fetchError) throw fetchError;
+
+                log(`Found ${results.length} competition results for swimmer 1`, 'info');
+
+                // Get swimmer gender
+                const { data: swimmer, error: swimmerError } = await supabase
+                    .from('swimmers')
+                    .select('gender')
+                    .eq('id', 1)
+                    .single();
+
+                if (swimmerError) throw swimmerError;
+
+                const gender = swimmer.gender || 'Boys';
+                log(`Swimmer gender: ${gender}`, 'info');
+
+                // Recalculate each time standard
+                let updated = 0;
+                let errors = 0;
+
+                for (const result of results) {
+                    try {
+                        // Remove course type from event name for RPC call
+                        const eventName = result.event_name.replace(/ (SCY|LCM|SCM)$/i, '');
+
+                        // Call get_current_standard RPC function
+                        const { data: calculatedStandard, error: rpcError } = await supabase
+                            .rpc('get_current_standard', {
+                                p_event_name: eventName,
+                                p_time_seconds: result.time_seconds,
+                                p_age: result.age,
+                                p_gender: gender,
+                                p_course_type: result.course_type
+                            });
+
+                        if (rpcError) {
+                            log(`  Error calculating standard for ${result.event_name}: ${rpcError.message}`, 'error');
+                            errors++;
+                            continue;
+                        }
+
+                        // Update the record
+                        const { error: updateError } = await supabase
+                            .from('competition_results')
+                            .update({ time_standard: calculatedStandard })
+                            .eq('id', result.id);
+
+                        if (updateError) {
+                            log(`  Error updating ${result.event_name}: ${updateError.message}`, 'error');
+                            errors++;
+                        } else {
+                            updated++;
+                            if (updated % 10 === 0) {
+                                log(`  Updated ${updated}/${results.length} records...`, 'info');
+                            }
+                        }
+                    } catch (err) {
+                        log(`  Unexpected error for ${result.event_name}: ${err.message}`, 'error');
+                        errors++;
+                    }
+                }
+
+                log('', 'info');
+                log(`✅ Recalculation complete!`, 'success');
+                log(`   Successfully updated: ${updated} records`, 'success');
+                if (errors > 0) {
+                    log(`   Errors: ${errors} records`, 'error');
+                }
+
+                // Now verify results
+                await verifyResults();
+
+            } catch (error) {
+                log(`❌ Fatal error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function verifyResults() {
+            try {
+                log('', 'info');
+                log('Verifying time standards...', 'info');
+
+                // Count by time_standard
+                const { data: results, error } = await supabase
+                    .from('competition_results')
+                    .select('time_standard')
+                    .eq('swimmer_id', 1);
+
+                if (error) throw error;
+
+                const counts = {};
+                results.forEach(r => {
+                    const std = r.time_standard || 'NULL';
+                    counts[std] = (counts[std] || 0) + 1;
+                });
+
+                log('', 'info');
+                log('Time Standard Counts:', 'info');
+                Object.keys(counts).sort().forEach(std => {
+                    const className = std === 'A' ? 'error' : 'info';
+                    log(`  ${std}: ${counts[std]}`, className);
+                });
+
+                if (counts['A']) {
+                    log('', 'error');
+                    log(`⚠️  WARNING: Found ${counts['A']} 'A' time standards!`, 'error');
+                    log('   Vihaan should have 0 A times. These may be incorrectly calculated.', 'error');
+                } else {
+                    log('', 'success');
+                    log('✅ Verification passed: No A time standards found (correct)', 'success');
+                }
+
+                // Show recent records
+                const { data: recent, error: recentError } = await supabase
+                    .from('competition_results')
+                    .select('event_name, time_standard, time_seconds, event_date')
+                    .eq('swimmer_id', 1)
+                    .order('event_date', { ascending: false })
+                    .limit(10);
+
+                if (!recentError) {
+                    log('', 'info');
+                    log('Recent 10 records:', 'info');
+                    recent.forEach(r => {
+                        log(`  ${r.event_date} | ${r.event_name} | ${r.time_seconds}s | ${r.time_standard || 'NULL'}`, 'info');
+                    });
+                }
+
+            } catch (error) {
+                log(`❌ Verification error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

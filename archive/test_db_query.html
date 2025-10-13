@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Database Query</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Database Time Standards Check</h1>
+    <button onclick="checkTimeStandards()">Check Time Standards in DB</button>
+    <pre id="results"></pre>
+
+    <script>
+        const SUPABASE_CONFIG = {
+            url: 'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+        };
+
+        const supabase = window.supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.anonKey
+        );
+
+        async function checkTimeStandards() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.textContent = 'Loading...\n';
+
+            try {
+                // Query all competition results for swimmer 1
+                const { data, error } = await supabase
+                    .from('competition_results')
+                    .select('event_name, time_standard, time_seconds, event_date')
+                    .eq('swimmer_id', 1)
+                    .order('event_date');
+
+                if (error) throw error;
+
+                resultsDiv.textContent = `Total events: ${data.length}\n\n`;
+
+                // Count by time_standard
+                const counts = {};
+                data.forEach(item => {
+                    const std = item.time_standard || 'NULL';
+                    counts[std] = (counts[std] || 0) + 1;
+                });
+
+                resultsDiv.textContent += 'Time Standard Counts:\n';
+                Object.keys(counts).sort().forEach(std => {
+                    resultsDiv.textContent += `  ${std}: ${counts[std]}\n`;
+                });
+
+                resultsDiv.textContent += '\n\nAll Records:\n';
+                data.forEach(item => {
+                    resultsDiv.textContent += `${item.event_date} | ${item.event_name} | ${item.time_seconds}s | ${item.time_standard || 'NULL'}\n`;
+                });
+
+            } catch (error) {
+                resultsDiv.textContent = 'Error: ' + error.message;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

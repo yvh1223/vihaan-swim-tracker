@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Time Standards Table</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #2a5298;
+            color: white;
+        }
+        .null-value { background: #ffebee; color: #c62828; font-style: italic; }
+        .has-value { background: #e8f5e9; }
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .button:hover { background: #1e3c72; }
+    </style>
+</head>
+<body>
+    <h1>Time Standards Table Contents</h1>
+    <p>Checking what standards are stored in the database for 10&U age group.</p>
+
+    <button class="button" onclick="checkStandards()">Check Standards</button>
+
+    <div id="output"></div>
+
+    <script>
+        const SUPABASE_CONFIG = {
+            url: 'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+        };
+
+        const supabase = window.supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.anonKey
+        );
+
+        async function checkStandards() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<h2>Loading...</h2>';
+
+            try {
+                // Get standards for the problematic events
+                const problemEvents = ['100 FR', '100 BK', '100 BR', '100 IM', '50 BR', '200 IM'];
+
+                const { data: standards, error } = await supabase
+                    .from('time_standards')
+                    .select('*')
+                    .eq('age_group', '10 & under')
+                    .eq('gender', 'Boys')
+                    .eq('course_type', 'SCY')
+                    .in('event_name', problemEvents)
+                    .order('event_name');
+
+                if (error) throw error;
+
+                let html = `<h2>10&U Boys SCY Standards (${standards.length} events)</h2>`;
+                html += '<table><thead><tr>';
+                html += '<th>Event</th><th>AAAA</th><th>AAA</th><th>AA</th><th>A</th><th>BB</th><th>B</th>';
+                html += '</tr></thead><tbody>';
+
+                standards.forEach(std => {
+                    html += '<tr>';
+                    html += `<td><strong>${std.event_name}</strong></td>`;
+                    html += formatStandardCell(std.aaaa_standard);
+                    html += formatStandardCell(std.aaa_standard);
+                    html += formatStandardCell(std.aa_standard);
+                    html += formatStandardCell(std.a_standard);
+                    html += formatStandardCell(std.bb_standard);
+                    html += formatStandardCell(std.b_standard);
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+
+                html += '<div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-top: 20px;">';
+                html += '<h3>Analysis:</h3>';
+                html += '<ul>';
+                html += '<li><span style="background: #ffebee; padding: 2px 5px;">Red cells</span> = NULL values (no standard exists)</li>';
+                html += '<li><span style="background: #e8f5e9; padding: 2px 5px;">Green cells</span> = Has value (standard exists)</li>';
+                html += '<li><strong>Problem:</strong> If A, AA, AAA, or AAAA columns have actual numeric values instead of NULL for 10&U, that\'s the bug!</li>';
+                html += '<li><strong>Expected:</strong> 10&U should only have B and BB standards (maybe A for some events)</li>';
+                html += '</ul>';
+                html += '</div>';
+
+                output.innerHTML = html;
+
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        }
+
+        function formatStandardCell(value) {
+            if (value === null || value === undefined) {
+                return '<td class="null-value">NULL</td>';
+            }
+            return `<td class="has-value">${formatTime(value)}<br/><small>(${value}s)</small></td>`;
+        }
+
+        function formatTime(seconds) {
+            if (seconds >= 60) {
+                const mins = Math.floor(seconds / 60);
+                const secs = (seconds % 60).toFixed(2);
+                return `${mins}:${secs.padStart(5, '0')}`;
+            }
+            return seconds.toFixed(2) + 's';
+        }
+    </script>
+</body>
+</html>

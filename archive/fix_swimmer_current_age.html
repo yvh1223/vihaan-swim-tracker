@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Swimmer Current Age</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .button:hover { background: #1e3c72; }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #2a5298; }
+    </style>
+</head>
+<body>
+    <h1>Fix Swimmer Current Age</h1>
+    <p>The progress_report view needs the swimmer's current_age to be set correctly.</p>
+
+    <button class="button" onclick="checkAndFix()">Check & Fix Current Age</button>
+
+    <h2>Output:</h2>
+    <pre id="output"></pre>
+
+    <script>
+        // Service role key for write access
+        const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDI4OTczMCwiZXhwIjoyMDc1ODY1NzMwfQ.yeogkX6imUHwudhlaIDpsAZzhwEXO8uuegTdrFKEZoA';
+
+        const supabase = window.supabase.createClient(
+            'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            SERVICE_ROLE_KEY
+        );
+
+        const output = document.getElementById('output');
+
+        function log(message, className = 'info') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.textContent = message;
+            output.appendChild(line);
+        }
+
+        async function checkAndFix() {
+            output.innerHTML = '';
+
+            try {
+                log('1. Checking swimmer data...', 'info');
+
+                // Get swimmer 1
+                const { data: swimmer, error: swimmerError } = await supabase
+                    .from('swimmers')
+                    .select('*')
+                    .eq('id', 1)
+                    .single();
+
+                if (swimmerError) throw swimmerError;
+
+                log(`   Swimmer: ${swimmer.full_name}`, 'info');
+                log(`   Current Age: ${swimmer.current_age || 'NULL'}`, swimmer.current_age ? 'success' : 'error');
+                log(`   Gender: ${swimmer.gender || 'NULL'}`, swimmer.gender ? 'success' : 'error');
+                log('', 'info');
+
+                if (!swimmer.current_age) {
+                    log('2. Current age is NULL! Setting to 10...', 'info');
+
+                    const { data: updated, error: updateError } = await supabase
+                        .from('swimmers')
+                        .update({ current_age: 10 })
+                        .eq('id', 1)
+                        .select();
+
+                    if (updateError) throw updateError;
+
+                    log('   ✅ Updated current_age to 10', 'success');
+                    log('', 'info');
+                } else {
+                    log('2. Current age is already set correctly', 'success');
+                    log('', 'info');
+                }
+
+                // Now test the progress_report view
+                log('3. Testing progress_report view...', 'info');
+
+                const { data: progress, error: progressError } = await supabase
+                    .from('progress_report')
+                    .select('event_name, current_standard, next_standard, gap_seconds')
+                    .eq('swimmer_id', 1)
+                    .limit(5);
+
+                if (progressError) throw progressError;
+
+                log(`   Fetched ${progress.length} events`, 'info');
+                log('', 'info');
+
+                log('4. Sample progress data:', 'info');
+                progress.forEach(p => {
+                    log(`   ${p.event_name}:`, 'info');
+                    log(`      Current: ${p.current_standard || 'NULL'}`, p.current_standard ? 'success' : 'error');
+                    log(`      Next: ${p.next_standard || 'NULL'}`, p.next_standard ? 'success' : 'error');
+                    log(`      Gap: ${p.gap_seconds || 'NULL'}`, p.gap_seconds ? 'success' : 'error');
+                });
+                log('', 'info');
+
+                const nullCount = progress.filter(p => !p.current_standard).length;
+                if (nullCount > 0) {
+                    log(`⚠️  WARNING: ${nullCount}/${progress.length} events have NULL standards`, 'error');
+                    log('   This indicates the RPC functions are not working correctly.', 'error');
+                    log('', 'info');
+                    log('Possible causes:', 'info');
+                    log('   1. Event names in competition_results don\'t match time_standards', 'info');
+                    log('   2. The get_current_standard() function has issues', 'info');
+                    log('   3. The progress_report view needs to be refreshed', 'info');
+                } else {
+                    log('✅ All events have valid standards!', 'success');
+                    log('   Gap charts should now work correctly.', 'success');
+                    log('   Refresh the main page to see them.', 'success');
+                }
+
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

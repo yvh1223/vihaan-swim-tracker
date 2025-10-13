@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Gap Analysis Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .button:hover { background: #1e3c72; }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Gap Analysis Charts</h1>
+    <p>Testing if we can load progress report data and display it in charts.</p>
+
+    <button class="button" onclick="testGapCharts()">Test Gap Analysis Data</button>
+
+    <h2>Debug Output:</h2>
+    <pre id="output"></pre>
+
+    <h2>BB Gap Chart:</h2>
+    <div class="chart-container">
+        <canvas id="bbChart"></canvas>
+    </div>
+
+    <h2>A Gap Chart:</h2>
+    <div class="chart-container">
+        <canvas id="aChart"></canvas>
+    </div>
+
+    <script src="js/supabase-client.js"></script>
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message) {
+            output.textContent += message + '\n';
+        }
+
+        async function testGapCharts() {
+            output.textContent = '';
+            log('Starting gap chart test...\n');
+
+            try {
+                // Initialize Supabase
+                log('1. Initializing Supabase client...');
+                await window.SupabaseClient.init();
+                log('   ✅ Supabase initialized\n');
+
+                // Get progress report
+                log('2. Fetching progress report for swimmer 1...');
+                const progressData = await window.SupabaseClient.getProgressReport(1);
+                log(`   ✅ Fetched ${progressData?.length || 0} events\n`);
+
+                if (!progressData || progressData.length === 0) {
+                    log('   ❌ ERROR: No progress data returned!');
+                    return;
+                }
+
+                log('3. Sample progress data:');
+                log(JSON.stringify(progressData.slice(0, 2), null, 2));
+                log('\n');
+
+                // Filter for BB gaps
+                log('4. Filtering for BB gaps (next_standard === "BB")...');
+                const bbGapData = progressData.filter(item =>
+                    item.next_standard === 'BB' &&
+                    item.gap_seconds != null &&
+                    item.gap_seconds > 0
+                );
+                log(`   Found ${bbGapData.length} events with BB gaps\n`);
+
+                if (bbGapData.length > 0) {
+                    log('   BB Gap Events:');
+                    bbGapData.forEach(item => {
+                        log(`   - ${item.event_name}: gap = ${item.gap_seconds}s`);
+                    });
+                    log('\n');
+
+                    // Create BB chart
+                    log('5. Creating BB gap chart...');
+                    createBBChart(bbGapData);
+                    log('   ✅ BB chart created\n');
+                } else {
+                    log('   ⚠️  No BB gaps found\n');
+                }
+
+                // Filter for A gaps
+                log('6. Filtering for A gaps (next_standard === "A")...');
+                const aGapData = progressData.filter(item =>
+                    item.next_standard === 'A' &&
+                    item.gap_seconds != null &&
+                    item.gap_seconds > 0
+                );
+                log(`   Found ${aGapData.length} events with A gaps\n`);
+
+                if (aGapData.length > 0) {
+                    log('   A Gap Events:');
+                    aGapData.forEach(item => {
+                        log(`   - ${item.event_name}: gap = ${item.gap_seconds}s`);
+                    });
+                    log('\n');
+
+                    // Create A chart
+                    log('7. Creating A gap chart...');
+                    createAChart(aGapData);
+                    log('   ✅ A chart created\n');
+                } else {
+                    log('   ⚠️  No A gaps found (working on BB standards)\n');
+                }
+
+                log('✅ Test complete!');
+
+            } catch (error) {
+                log(`\n❌ ERROR: ${error.message}`);
+                log(`Stack: ${error.stack}`);
+                console.error('Test error:', error);
+            }
+        }
+
+        function createBBChart(data) {
+            const ctx = document.getElementById('bbChart');
+            const labels = data.map(item => item.event_name);
+            const gaps = data.map(item => Math.abs(item.gap_seconds));
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Gap to BB Standard (seconds)',
+                        data: gaps,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: '#28a745',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'BB Standards - Gap Analysis'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Seconds to Improve' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createAChart(data) {
+            const ctx = document.getElementById('aChart');
+            const labels = data.map(item => item.event_name);
+            const gaps = data.map(item => Math.abs(item.gap_seconds));
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Gap to A Standard (seconds)',
+                        data: gaps,
+                        backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                        borderColor: '#ffc107',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'A Standards - Elite Performance Goals'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Seconds to Improve' }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

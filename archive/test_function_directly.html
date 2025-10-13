@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test get_current_standard Function</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-case {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 5px solid #2a5298;
+        }
+        .result {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .correct { color: #28a745; }
+        .incorrect { color: #dc3545; }
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .button:hover { background: #1e3c72; }
+        pre {
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test get_current_standard() Function</h1>
+    <p>Testing the database RPC function with Vihaan's actual times to see what it returns.</p>
+
+    <button class="button" onclick="runTests()">Run Tests</button>
+
+    <div id="output"></div>
+
+    <script>
+        const SUPABASE_CONFIG = {
+            url: 'https://gwqwpicbtkamojwwlmlp.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+        };
+
+        const supabase = window.supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.anonKey
+        );
+
+        const testCases = [
+            { event: '100 FR', time: 74.72, age: 10, expected: 'BB', aStd: 69.79, bbStd: 78.89 },
+            { event: '100 BK', time: 84.00, age: 10, expected: 'BB', aStd: 79.59, bbStd: 90.09 },
+            { event: '100 BR', time: 98.29, age: 10, expected: 'BB', aStd: 90.59, bbStd: 102.29 },
+            { event: '100 IM', time: 86.52, age: 10, expected: 'BB', aStd: 79.69, bbStd: 89.69 },
+            { event: '50 BR', time: 44.10, age: 10, expected: 'BB', aStd: 42.09, bbStd: 47.69 },
+            { event: '200 IM', time: 186.13, age: 10, expected: 'BB', aStd: 173.49, bbStd: 195.99 },
+        ];
+
+        async function runTests() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<h2>Running Tests...</h2>';
+
+            let html = '';
+            let passCount = 0;
+            let failCount = 0;
+
+            for (const test of testCases) {
+                try {
+                    // Call the RPC function
+                    const { data: result, error } = await supabase
+                        .rpc('get_current_standard', {
+                            p_event_name: test.event,
+                            p_time_seconds: test.time,
+                            p_age: test.age,
+                            p_gender: 'Boys',
+                            p_course_type: 'SCY'
+                        });
+
+                    if (error) {
+                        html += `<div class="test-case">`;
+                        html += `<h3>${test.event} - ${test.time}s</h3>`;
+                        html += `<p style="color: red;">Error: ${error.message}</p>`;
+                        html += `</div>`;
+                        failCount++;
+                        continue;
+                    }
+
+                    const isCorrect = result === test.expected;
+                    const resultClass = isCorrect ? 'correct' : 'incorrect';
+
+                    if (isCorrect) passCount++;
+                    else failCount++;
+
+                    html += `<div class="test-case">`;
+                    html += `<h3>${test.event} - ${test.time}s (age ${test.age})</h3>`;
+                    html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">`;
+                    html += `<div>`;
+                    html += `<strong>Standards:</strong><br/>`;
+                    html += `A: ${test.aStd}s<br/>`;
+                    html += `BB: ${test.bbStd}s<br/>`;
+                    html += `</div>`;
+                    html += `<div>`;
+                    html += `<strong>Analysis:</strong><br/>`;
+                    html += `Time ${test.time}s is ${(test.time - test.aStd).toFixed(2)}s slower than A<br/>`;
+                    html += `Time ${test.time}s is ${(test.time - test.bbStd).toFixed(2)}s ${test.time <= test.bbStd ? 'faster' : 'slower'} than BB<br/>`;
+                    html += `</div>`;
+                    html += `</div>`;
+                    html += `<div class="result ${resultClass}">`;
+                    html += `Function returned: <code>${result || 'NULL'}</code><br/>`;
+                    html += `Expected: <code>${test.expected}</code><br/>`;
+                    html += isCorrect ? '✅ CORRECT' : '❌ INCORRECT';
+                    html += `</div>`;
+                    html += `</div>`;
+
+                } catch (err) {
+                    html += `<div class="test-case">`;
+                    html += `<h3>${test.event} - ${test.time}s</h3>`;
+                    html += `<p style="color: red;">Unexpected error: ${err.message}</p>`;
+                    html += `</div>`;
+                    failCount++;
+                }
+            }
+
+            html = `<h2>Test Results: ${passCount} passed, ${failCount} failed</h2>` + html;
+
+            if (failCount > 0) {
+                html += `<div style="background: #ffebee; padding: 20px; border-radius: 10px; margin-top: 20px;">`;
+                html += `<h3 style="color: #c62828;">🐛 Bug Confirmed!</h3>`;
+                html += `<p>The get_current_standard() function is incorrectly returning 'A' for times that should be 'BB'.</p>`;
+                html += `<p><strong>Root cause:</strong> The function logic needs to be fixed. The cascade of IF/ELSIF checks might be comparing in the wrong order or with wrong comparison operators.</p>`;
+                html += `</div>`;
+            }
+
+            output.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
