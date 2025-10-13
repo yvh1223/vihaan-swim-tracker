@@ -486,13 +486,22 @@
                     </div>
                 </div>
 
-                <!-- Unified Progress Chart -->
+                <!-- 1. Unified Progress Chart - Overall view of all events -->
                 <div class="chart-container" style="height: 600px;">
                     <canvas id="unifiedEventChart"></canvas>
                 </div>
 
-                <!-- BB Standards Gap Analysis Chart -->
-                <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 20px; border-radius: 10px; margin-top: 20px; border: 2px solid #dee2e6;">
+                <!-- 2. AI Performance Analysis - Data-driven insights -->
+                <div style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); color: white; padding: 20px; border-radius: 10px; margin-top: 30px;">
+                    <h3 style="margin-top: 0; font-size: 1.4em;">📊 Performance Analysis & Monthly Targets</h3>
+                    <p style="margin: 0 0 20px 0; opacity: 0.95;">Data-driven insights showing improvement rates, trends, and AI-predicted monthly targets</p>
+                    <div id="aiTrendAnalysis">
+                        <!-- AI analysis will be populated here -->
+                    </div>
+                </div>
+
+                <!-- 3. BB Standards Gap Analysis - Current competitive focus -->
+                <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 20px; border-radius: 10px; margin-top: 30px; border: 2px solid #dee2e6;">
                     <h3 style="margin: 0 0 15px 0; color: white; text-align: center;">🎯 BB Standards - Gap Analysis</h3>
                     <p style="margin: 0 0 20px 0; color: white; text-align: center; opacity: 0.95;">
                         Current competitive level - Seconds to improve for BB standards
@@ -502,8 +511,8 @@
                     </div>
                 </div>
 
-                <!-- A Standards Gap Analysis Chart -->
-                <div style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); padding: 20px; border-radius: 10px; margin-top: 20px; border: 2px solid #dee2e6;">
+                <!-- 4. A Standards Gap Analysis - Elite level goals -->
+                <div style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); padding: 20px; border-radius: 10px; margin-top: 30px; border: 2px solid #dee2e6;">
                     <h3 style="margin: 0 0 15px 0; color: white; text-align: center;">🏆 A Standards - Elite Performance Goals</h3>
                     <p style="margin: 0 0 20px 0; color: white; text-align: center; opacity: 0.95;">
                         Elite level tracking - Seconds to improve for A time standards
@@ -512,31 +521,23 @@
                         <canvas id="aTimeGapChart"></canvas>
                     </div>
                 </div>
-
-                <!-- AI Trend Analysis & Targets -->
-                <div style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); color: white; padding: 20px; border-radius: 10px; margin-top: 20px;">
-                    <h3 style="margin-top: 0; font-size: 1.4em;">🤖 AI Trend Analysis & Monthly Targets</h3>
-                    <div id="aiTrendAnalysis">
-                        <!-- AI analysis will be populated here -->
-                    </div>
-                </div>
             </div>
 
             <!-- Personal Records Tab -->
             <div id="records" class="tab-pane">
                 <h2>🏆 Personal Records & Best Times</h2>
-                
+
                 <!-- Best Times Summary -->
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                    <h3 style="margin-top: 0; color: #2a5298;">Current Personal Records</h3>
+                    <h3 style="margin-top: 0; color: #2a5298;">Personal Best Times</h3>
                     <div id="personalRecordsTable">
                         <!-- Personal records table will be populated here -->
                     </div>
                 </div>
 
-                <!-- Improvement Analytics -->
+                <!-- Time Improvements -->
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                    <h3 style="margin-top: 0; color: #2a5298;">📈 Improvement Analytics</h3>
+                    <h3 style="margin-top: 0; color: #2a5298;">⏱️ Time Improvements</h3>
                     <div id="improvementAnalytics">
                         <!-- Improvement data will be populated here -->
                     </div>
