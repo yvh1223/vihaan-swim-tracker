@@ -1638,14 +1638,14 @@ function initializeAITrendAnalysis() {
 }
 
 // Initialize Time Standards Gap Analysis chart
-function initializeTimeStandardsGapChart() {
+async function initializeTimeStandardsGapChart() {
     const ctx = document.getElementById('timeStandardsGapChart');
     if (!ctx) {
         console.error('❌ Time Standards Gap chart canvas not found!');
         return;
     }
 
-    console.log('🎯 Initializing Gap Analysis Chart...');
+    console.log('🎯 Initializing Gap Analysis Chart with database...');
 
     try {
         if (window.timeStandardsGapChart && typeof window.timeStandardsGapChart.destroy === 'function') {
@@ -1653,18 +1653,12 @@ function initializeTimeStandardsGapChart() {
             window.timeStandardsGapChart = null;
         }
 
-        // Get filtered event data based on current chart filters
-        const filteredData = getFilteredEventData();
-        console.log('📊 Gap analysis - Current filters:', chartFilters);
-        console.log('📊 Gap analysis - Filtered data:', filteredData.length, 'events');
+        // Get progress report from database (swimmer ID = 1 for Vihaan)
+        const progressData = await window.SupabaseClient.getProgressReport(1);
+        console.log('📊 Progress report data:', progressData?.length || 0, 'events');
 
-        if (filteredData.length > 0) {
-            console.log('📊 Sample filtered events:', filteredData.slice(0, 3).map(e => e.event));
-        }
-
-        if (filteredData.length === 0) {
-            console.warn('⚠️ No filtered data for gap chart, showing empty message');
-            // Show "no data" message
+        if (!progressData || progressData.length === 0) {
+            console.warn('⚠️ No progress data from database');
             window.timeStandardsGapChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -1682,7 +1676,7 @@ function initializeTimeStandardsGapChart() {
                     plugins: {
                         title: {
                             display: true,
-                            text: 'No data matches the current filters',
+                            text: 'No progress data available',
                             font: { size: 16 }
                         }
                     }
@@ -1691,63 +1685,24 @@ function initializeTimeStandardsGapChart() {
             return;
         }
 
-        // Calculate personal records for filtered events, tracking achieved standards
-        const prs = {};
-        filteredData.forEach(event => {
-            const time = timeToSeconds(event.time);
-            if (time === null) return;
+        // Filter for events where next standard is BB and gap exists
+        const bbGapData = progressData
+            .filter(item => item.next_standard === 'BB' && item.gap_seconds != null && item.gap_seconds > 0)
+            .sort((a, b) => b.gap_seconds - a.gap_seconds); // Sort by largest gap first (highest priority)
 
-            if (!prs[event.event] || time < prs[event.event].time) {
-                prs[event.event] = {
-                    time: time,
-                    date: event.date,
-                    timeStandard: event.timeStandard // Track what was actually awarded
-                };
-            }
-        });
+        console.log('📈 BB gap events:', bbGapData.length);
 
-        console.log('🏆 Personal Records calculated:', Object.keys(prs).length, 'events');
-        if (Object.keys(prs).length > 0) {
-            console.log('🏆 Sample PRs:', Object.keys(prs).slice(0, 3));
-        }
-
-        // Prepare data for gap analysis
-        const chartData = [];
-        const eventTypes = Object.keys(prs).sort();
-
-        // Use current date to determine age group (10&U or 11-12)
-        const now = new Date();
-        const birthdayMonth = new Date('2026-01-01');
-        const ageGroup = now >= birthdayMonth ? '11-12' : '10&U';
-
-        console.log('🎂 Age Group:', ageGroup);
-
-        // TODO: Replace hardcoded timeStandards with database query
-        // For now, skip gap analysis entirely to prevent errors
-        console.warn('⚠️ Gap analysis temporarily disabled - hardcoded timeStandards removed');
-        console.warn('📝 Next step: Use progress_report view from Supabase for gap data');
-
-        // Sort by gap to BB (descending - highest priority first)
-        chartData.sort((a, b) => b.gapToBB - a.gapToBB);
-
-        console.log('📈 Chart data prepared:', chartData.length, 'events');
-        if (chartData.length > 0) {
-            console.log('📈 Sample chart data:', chartData.slice(0, 2));
-        } else {
-            console.error('❌ No chart data to display! Check if time standards exist for filtered events.');
-        }
-
-        // If no chart data, show informative message
-        if (chartData.length === 0) {
-            console.warn('⚠️ No chart data available - no time standards found for filtered events');
+        // If no BB gaps, show that all BB standards are achieved
+        if (bbGapData.length === 0) {
+            console.log('✅ All BB standards achieved or no gaps to display');
             window.timeStandardsGapChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['No Standards Available'],
+                    labels: ['All BB Standards Achieved! 🎉'],
                     datasets: [{
-                        label: 'No data',
-                        data: [0],
-                        backgroundColor: '#ffc107'
+                        label: 'Achievement',
+                        data: [1],
+                        backgroundColor: '#28a745'
                     }]
                 },
                 options: {
@@ -1757,7 +1712,7 @@ function initializeTimeStandardsGapChart() {
                     plugins: {
                         title: {
                             display: true,
-                            text: 'No time standards found for filtered events (' + ageGroup + ')',
+                            text: 'BB Standards - All Goals Achieved! 🏆',
                             font: { size: 16 }
                         },
                         legend: {
@@ -1773,27 +1728,14 @@ function initializeTimeStandardsGapChart() {
             return;
         }
 
-        // Always show the chart - don't hide with congratulations message
-        // Even if all standards are achieved, show the events with achievement badges
-
-        // Create the horizontal bar chart with achievement indicators
-        const labels = chartData.map(d => {
-            let label = d.eventType;
-            // Add achievement indicators based on actual awarded standards
-            const achievements = [];
-            if (d.hasBB) achievements.push('✓BB');
-            if (d.hasB) achievements.push('✓B');
-
-            if (achievements.length > 0) {
-                label = `${label}  [${achievements.join(' ')}]`;
-            }
-            return label;
-        });
+        // Create labels and data from database progress report
+        const labels = bbGapData.map(item => item.event_name);
+        const gaps = bbGapData.map(item => Math.abs(item.gap_seconds)); // Use absolute value
 
         // Create single dataset for BB gaps (green)
         const datasets = [{
-            label: `Gap to ${ageGroup} BB`,
-            data: chartData.map(d => d.gapToBB),
+            label: 'Gap to BB Standard',
+            data: gaps,
             backgroundColor: 'rgba(40, 167, 69, 0.7)',
             borderColor: '#28a745',
             borderWidth: 2
@@ -1812,7 +1754,7 @@ function initializeTimeStandardsGapChart() {
                 plugins: {
                     title: {
                         display: true,
-                        text: `BB Standards - Gap Analysis (${ageGroup} Age Group)`,
+                        text: 'BB Standards - Gap Analysis',
                         font: { size: 16 }
                     },
                     legend: {
@@ -1823,18 +1765,14 @@ function initializeTimeStandardsGapChart() {
                         callbacks: {
                             label: function(context) {
                                 const dataIndex = context.dataIndex;
-                                const data = chartData[dataIndex];
+                                const item = bbGapData[dataIndex];
                                 const gap = context.parsed.x;
 
-                                if (gap === 0) {
-                                    return `BB Standard already achieved! ✅`;
-                                }
-
                                 return [
-                                    `Current Time: ${secondsToTimeString(data.currentTime)}`,
-                                    `BB Standard: ${secondsToTimeString(data.standardsBB)}`,
-                                    `Gap to BB: ${secondsToTimeString(gap)}`,
-                                    `${data.currentTime < data.standardsBB ? 'Already faster - need award' : 'Improvement needed'}: ${gap.toFixed(2)}s`
+                                    `Current: ${item.time_formatted || window.SupabaseClient.formatSecondsToTime(item.time_seconds)}`,
+                                    `Current Standard: ${item.current_standard || 'None'}`,
+                                    `Next: BB Standard`,
+                                    `Gap: ${gap.toFixed(2)}s (${(gap * 100 / item.time_seconds).toFixed(1)}% improvement needed)`
                                 ];
                             }
                         }
@@ -1952,14 +1890,14 @@ function initializeTimeStandardsGapChart() {
 }
 
 // Initialize A Time Standards Gap Analysis chart
-function initializeATimeGapChart() {
+async function initializeATimeGapChart() {
     const ctx = document.getElementById('aTimeGapChart');
     if (!ctx) {
         console.error('❌ A Time Gap chart canvas not found!');
         return;
     }
 
-    console.log('🏆 Initializing A Time Gap Analysis Chart...');
+    console.log('🏆 Initializing A Time Gap Analysis Chart with database...');
 
     try {
         if (window.aTimeGapChart && typeof window.aTimeGapChart.destroy === 'function') {
@@ -1967,12 +1905,12 @@ function initializeATimeGapChart() {
             window.aTimeGapChart = null;
         }
 
-        // Get filtered event data based on current chart filters
-        const filteredData = getFilteredEventData();
-        console.log('📊 A Time analysis - Filtered data:', filteredData.length, 'events');
+        // Get progress report from database (swimmer ID = 1 for Vihaan)
+        const progressData = await window.SupabaseClient.getProgressReport(1);
+        console.log('📊 Progress report data for A time:', progressData?.length || 0, 'events');
 
-        if (filteredData.length === 0) {
-            console.warn('⚠️ No filtered data for A time chart');
+        if (!progressData || progressData.length === 0) {
+            console.warn('⚠️ No progress data from database');
             window.aTimeGapChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -1990,7 +1928,7 @@ function initializeATimeGapChart() {
                     plugins: {
                         title: {
                             display: true,
-                            text: 'No data matches the current filters',
+                            text: 'No progress data available',
                             font: { size: 16 }
                         }
                     }
@@ -1999,53 +1937,23 @@ function initializeATimeGapChart() {
             return;
         }
 
-        // Calculate personal records for filtered events, tracking achieved standards
-        const prs = {};
-        filteredData.forEach(event => {
-            const time = timeToSeconds(event.time);
-            if (time === null) return;
+        // Filter for events where next standard is A and gap exists
+        const aGapData = progressData
+            .filter(item => item.next_standard === 'A' && item.gap_seconds != null && item.gap_seconds > 0)
+            .sort((a, b) => b.gap_seconds - a.gap_seconds); // Sort by largest gap first (highest priority)
 
-            if (!prs[event.event] || time < prs[event.event].time) {
-                prs[event.event] = {
-                    time: time,
-                    date: event.date,
-                    timeStandard: event.timeStandard // Track what was actually awarded
-                };
-            }
-        });
+        console.log('📈 A gap events:', aGapData.length);
 
-        console.log('🏆 Personal Records for A time:', Object.keys(prs).length, 'events');
-
-        // Prepare data for A time gap analysis
-        const chartData = [];
-        const eventTypes = Object.keys(prs).sort();
-
-        // Use current date to determine age group (10&U or 11-12)
-        const now = new Date();
-        const birthdayMonth = new Date('2026-01-01');
-        const ageGroup = now >= birthdayMonth ? '11-12' : '10&U';
-
-        console.log('🎂 Age Group for A time:', ageGroup);
-
-        // TODO: Replace hardcoded timeStandards with database query
-        // For now, skip A time gap analysis entirely to prevent errors
-        console.warn('⚠️ A Time gap analysis temporarily disabled - hardcoded timeStandards removed');
-        console.warn('📝 Next step: Use progress_report view from Supabase for gap data');
-
-        // Sort by gap to A (descending - largest gap first, showing priority)
-        chartData.sort((a, b) => b.gapToA - a.gapToA);
-
-        console.log('📈 A Time chart data prepared:', chartData.length, 'events');
-
-        if (chartData.length === 0) {
-            console.warn('⚠️ No A time chart data available');
+        // If no A gaps, show that all A standards are achieved or working towards lower standards
+        if (aGapData.length === 0) {
+            console.log('✅ All A standards achieved or working on lower standards');
             window.aTimeGapChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['No Standards Available'],
+                    labels: ['All A Standards Achieved or Working on BB! 🎉'],
                     datasets: [{
-                        label: 'No data',
-                        data: [0],
+                        label: 'Achievement',
+                        data: [1],
                         backgroundColor: '#ffc107'
                     }]
                 },
@@ -2056,7 +1964,7 @@ function initializeATimeGapChart() {
                     plugins: {
                         title: {
                             display: true,
-                            text: 'No time standards found for filtered events (' + ageGroup + ')',
+                            text: 'A Standards - Elite Level! 🏆',
                             font: { size: 16 }
                         },
                         legend: {
@@ -2072,23 +1980,14 @@ function initializeATimeGapChart() {
             return;
         }
 
-        // Always show the chart - don't hide with congratulations message
-        // Even if all A standards are achieved, show the events with achievement badges
-
-        // Create labels with achievement indicators
-        const labels = chartData.map(d => {
-            let label = d.eventType;
-            // Add achievement indicator if A is achieved based on actual award
-            if (d.hasA) {
-                label = `${label}  [✓A]`;
-            }
-            return label;
-        });
+        // Create labels and data from database progress report
+        const labels = aGapData.map(item => item.event_name);
+        const gaps = aGapData.map(item => Math.abs(item.gap_seconds)); // Use absolute value
 
         // Create dataset for A time gaps (single color - yellow/gold)
         const datasets = [{
-            label: `Gap to ${ageGroup} A Standard`,
-            data: chartData.map(d => d.gapToA > 0 ? d.gapToA : 0),
+            label: 'Gap to A Standard',
+            data: gaps,
             backgroundColor: 'rgba(255, 193, 7, 0.8)',
             borderColor: '#ffc107',
             borderWidth: 2
@@ -2107,7 +2006,7 @@ function initializeATimeGapChart() {
                 plugins: {
                     title: {
                         display: true,
-                        text: `A Standards - Elite Performance Goals (${ageGroup} Age Group)`,
+                        text: 'A Standards - Elite Performance Goals',
                         font: { size: 16 }
                     },
                     legend: {
@@ -2118,18 +2017,14 @@ function initializeATimeGapChart() {
                         callbacks: {
                             label: function(context) {
                                 const dataIndex = context.dataIndex;
-                                const data = chartData[dataIndex];
+                                const item = aGapData[dataIndex];
                                 const gap = context.parsed.x;
 
-                                if (gap === 0) {
-                                    return `A Standard already achieved! 🏆`;
-                                }
-
                                 return [
-                                    `Current Time: ${secondsToTimeString(data.currentTime)}`,
-                                    `A Standard: ${secondsToTimeString(data.standardsA)}`,
-                                    `Gap to A: ${secondsToTimeString(gap)} seconds`,
-                                    `Improvement needed: ${gap.toFixed(2)}s`,
+                                    `Current: ${item.time_formatted || window.SupabaseClient.formatSecondsToTime(item.time_seconds)}`,
+                                    `Current Standard: ${item.current_standard || 'None'}`,
+                                    `Next: A Standard (Elite)`,
+                                    `Gap: ${gap.toFixed(2)}s (${(gap * 100 / item.time_seconds).toFixed(1)}% improvement needed)`,
                                     `🎯 Elite performance goal`
                                 ];
                             }
