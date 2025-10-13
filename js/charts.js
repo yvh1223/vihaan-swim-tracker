@@ -942,19 +942,23 @@ function initializeUnifiedEventChart() {
             // Note: Time standard reference lines removed from unified chart for clarity
             // See separate Time Standards Gap Analysis chart below for standards comparison
 
+            // Note: AI target prediction lines removed from unified chart to reduce clutter
+            // Target predictions are still available in the "Performance Analysis & Monthly Targets" section below
+            // Disabled to make the chart cleaner and easier to read
+            /*
             // Add AI target prediction line if available
             if (aiAnalysis.monthlyTargets && aiAnalysis.monthlyTargets[eventType] && events.length >= 2) {
                 console.log(`Adding AI targets for ${eventType}:`, aiAnalysis.monthlyTargets[eventType]);
-                
+
                 const lastEvent = events[events.length - 1];
                 const targetData = [];
-                
+
                 // Start from last actual performance
                 targetData.push({
                     x: lastEvent.date,
                     y: timeToSeconds(lastEvent.time)
                 });
-                
+
                 // Add target points for next 6 months
                 aiAnalysis.monthlyTargets[eventType].slice(0, 6).forEach(target => {
                     targetData.push({
@@ -988,6 +992,7 @@ function initializeUnifiedEventChart() {
                     eventsLength: events.length
                 });
             }
+            */
         });
 
         console.log('Creating chart with', datasets.length, 'datasets');
