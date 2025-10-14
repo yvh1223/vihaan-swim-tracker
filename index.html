@@ -18,7 +18,7 @@
         <!-- Top Bar - Minimal -->
         <header class="header">
             <div class="header-content">
-                <h1 class="logo">Swim</h1>
+                <h1 class="logo" id="teamLogo">Loading...</h1>
                 <select id="swimmerSelect" class="swimmer-select" aria-label="Select Swimmer">
                     <option value="">Loading...</option>
                 </select>
@@ -27,14 +27,6 @@
 
         <!-- Main Content - Single Page, Infinite Scroll -->
         <main class="main">
-            <!-- Hero Section -->
-            <section class="hero">
-                <div class="hero-content">
-                    <h2 class="hero-title" id="swimmerName">Loading...</h2>
-                    <p class="hero-subtitle" id="currentTeam">Loading team...</p>
-                </div>
-            </section>
-
             <!-- Stats Grid - Key Metrics Only -->
             <section class="stats">
                 <div class="stat-card">
@@ -57,23 +49,81 @@
 
             <!-- Progress Chart - The Star of the Show -->
             <section class="chart-section">
-                <h3 class="section-title">Progress</h3>
+                <div class="section-header">
+                    <h3 class="section-title">Progress</h3>
+                    <div class="chart-filters">
+                        <select id="strokeFilter" class="filter-select" aria-label="Filter by Stroke">
+                            <option value="all">All Strokes</option>
+                            <option value="FR">Freestyle</option>
+                            <option value="BK">Backstroke</option>
+                            <option value="BR">Breaststroke</option>
+                            <option value="FL">Butterfly</option>
+                            <option value="IM">Individual Medley</option>
+                        </select>
+                        <select id="distanceFilter" class="filter-select" aria-label="Filter by Distance">
+                            <option value="all">All Distances</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                            <option value="200">200</option>
+                            <option value="500">500</option>
+                        </select>
+                        <select id="courseFilter" class="filter-select" aria-label="Filter by Course">
+                            <option value="all">All Courses</option>
+                            <option value="SCY" selected>SCY</option>
+                            <option value="SCM">SCM</option>
+                            <option value="LCM">LCM</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="chart-container">
                     <canvas id="progressChart"></canvas>
+                </div>
+                <div id="progressInsights" class="progress-insights">
+                    <h4 class="insights-title">Projections</h4>
+                    <div id="progressInsightsContent">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </section>
 
             <!-- Gap Analysis - What's Next -->
             <section class="gap-section">
-                <h3 class="section-title">Goals</h3>
+                <h3 class="section-title">Goals for next Time Standards</h3>
                 <div class="chart-container">
                     <canvas id="gapChart"></canvas>
                 </div>
             </section>
 
+            <!-- Upcoming Meets Strategy -->
+            <section class="meets-section">
+                <div class="section-header">
+                    <h3 class="section-title">Meet Strategy - AI Driven Recommendations</h3>
+                    <div class="priority-filters">
+                        <button class="priority-filter-btn active" data-priority="all">All</button>
+                        <button class="priority-filter-btn" data-priority="high">High Priority</button>
+                        <button class="priority-filter-btn" data-priority="medium">Medium Priority</button>
+                        <button class="priority-filter-btn" data-priority="low">Low Priority</button>
+                    </div>
+                </div>
+                <div id="meetStrategy" class="meet-strategy">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Practice Strategy - Elite Coaching -->
+            <section class="practice-section">
+                <h3 class="section-title">Elite Training Plan - Detailed Coaching</h3>
+                <div class="practice-intro">
+                    <p>World-class training recommendations based on Olympic coaching methodology. Each recommendation includes specific drills, sets, and technique focus areas to maximize improvement.</p>
+                </div>
+                <div id="practiceStrategy" class="practice-strategy">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
             <!-- Personal Records - Simple Table -->
             <section class="records-section">
-                <h3 class="section-title">Best Times</h3>
+                <h3 class="section-title">Personal Best Times</h3>
                 <div id="recordsTable" class="records-table">
                     <!-- Populated by JS -->
                 </div>
