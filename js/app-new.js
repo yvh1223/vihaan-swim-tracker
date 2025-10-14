@@ -14,7 +14,8 @@ class SwimTracker {
         this.filters = {
             stroke: 'all',
             distance: '50',
-            course: 'SCY'
+            course: 'SCY',
+            exclude: ''
         };
         this.insightsSortConfig = {
             column: 'timeline', // default sort by timeline
@@ -151,6 +152,15 @@ class SwimTracker {
             });
         }
 
+        // Exclude filter event listener
+        const excludeFilter = document.getElementById('excludeFilter');
+        if (excludeFilter) {
+            excludeFilter.addEventListener('change', (e) => {
+                this.filters.exclude = e.target.value;
+                this.renderProgressChart();
+            });
+        }
+
         // Priority filter event listeners
         const priorityButtons = document.querySelectorAll('.priority-filter-btn');
         priorityButtons.forEach(btn => {
@@ -164,6 +174,34 @@ class SwimTracker {
                 this.filterMeetStrategy();
             });
         });
+
+        // Expand All / Collapse All button event listeners
+        const expandAllBtn = document.getElementById('expandAll');
+        const collapseAllBtn = document.getElementById('collapseAll');
+
+        if (expandAllBtn) {
+            expandAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.section-content, .practice-event-content, .phase-content').forEach(el => {
+                    el.classList.remove('collapsed');
+                    const header = document.querySelector(`[data-target="${el.id}"]`);
+                    const icon = header?.querySelector('.collapse-icon');
+                    if (icon) icon.textContent = '▲';
+                });
+            });
+        }
+
+        if (collapseAllBtn) {
+            collapseAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.section-content, .practice-event-content, .phase-content').forEach(el => {
+                    if (!el.classList.contains('collapsed')) {
+                        el.classList.add('collapsed');
+                        const header = document.querySelector(`[data-target="${el.id}"]`);
+                        const icon = header?.querySelector('.collapse-icon');
+                        if (icon) icon.textContent = '▼';
+                    }
+                });
+            });
+        }
     }
 
     async selectSwimmer(swimmerId) {
@@ -387,6 +425,11 @@ class SwimTracker {
                 return false;
             }
 
+            // Exclude filter - hide specific event if selected
+            if (this.filters.exclude && this.filters.exclude !== '' && eventName === this.filters.exclude) {
+                return false;
+            }
+
             return true;
         });
 
@@ -531,8 +574,31 @@ class SwimTracker {
             }
         });
 
+        // Populate exclude filter dropdown with available events
+        this.populateExcludeFilter(eventGroups);
+
         // Generate insights
         this.generateProgressInsights(eventGroups);
+    }
+
+    populateExcludeFilter(eventGroups) {
+        const excludeFilter = document.getElementById('excludeFilter');
+        if (!excludeFilter) return;
+
+        // Get all unique event names
+        const eventNames = Object.keys(eventGroups).sort();
+
+        // Store current selection
+        const currentSelection = this.filters.exclude;
+
+        // Build options HTML
+        let optionsHTML = '<option value="">No Exclusions</option>';
+        eventNames.forEach(event => {
+            const selected = event === currentSelection ? 'selected' : '';
+            optionsHTML += `<option value="${event}" ${selected}>${event}</option>`;
+        });
+
+        excludeFilter.innerHTML = optionsHTML;
     }
 
     async generateProgressInsights(eventGroups) {
@@ -1330,7 +1396,7 @@ class SwimTracker {
                     <div class="stroke-events">
             `;
 
-            strokeData.events.forEach(insight => {
+            strokeData.events.forEach((insight, eventIndex) => {
                 const gap = insight.gap;
                 const months = Math.ceil(insight.monthsToTarget);
                 const targetDate = new Date(insight.lastEventDate);
@@ -1345,9 +1411,11 @@ class SwimTracker {
                 // Get detailed training plan
                 const trainingPlan = this.getDetailedTrainingPlan(strokeKey, distance, gap, months, insight);
 
+                const eventId = `event-${strokeKey}-${eventIndex}`;
+
                 html += `
                     <div class="practice-event">
-                        <div class="practice-event-header">
+                        <div class="practice-event-header collapsible" data-target="${eventId}">
                             <div class="practice-event-info">
                                 <div class="practice-event-name">${insight.event}</div>
                                 <div class="practice-goal">
@@ -1355,10 +1423,15 @@ class SwimTracker {
                                     <div class="practice-timeline">⏱️ Target Date: ${targetMonth} • ${months} month${months > 1 ? 's' : ''} to prepare</div>
                                 </div>
                             </div>
-                            <span class="urgency-badge urgency-${urgency}">${urgencyLabel}</span>
+                            <div class="event-header-actions">
+                                <span class="urgency-badge urgency-${urgency}">${urgencyLabel}</span>
+                                <span class="collapse-icon">▼</span>
+                            </div>
                         </div>
 
-                        ${trainingPlan}
+                        <div class="practice-event-content collapsed" id="${eventId}">
+                            ${trainingPlan}
+                        </div>
                     </div>
                 `;
             });
@@ -1380,7 +1453,8 @@ class SwimTracker {
     }
 
     setupCollapsibleHandlers() {
-        const collapsibleHeaders = document.querySelectorAll('.phase-header.collapsible');
+        // Handle both phase headers and event headers
+        const collapsibleHeaders = document.querySelectorAll('.collapsible');
         collapsibleHeaders.forEach(header => {
             header.addEventListener('click', (e) => {
                 const targetId = header.getAttribute('data-target');

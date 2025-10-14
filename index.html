@@ -27,6 +27,12 @@
 
         <!-- Main Content - Single Page, Infinite Scroll -->
         <main class="main">
+            <!-- Expand/Collapse All Controls -->
+            <div class="global-controls">
+                <button id="expandAll" class="control-btn">Expand All</button>
+                <button id="collapseAll" class="control-btn">Collapse All</button>
+            </div>
+
             <!-- Stats Grid - Key Metrics Only -->
             <section class="stats">
                 <div class="stat-card">
@@ -48,92 +54,125 @@
             </section>
 
             <!-- Progress Chart - The Star of the Show -->
-            <section class="chart-section">
-                <div class="section-header">
-                    <h3 class="section-title">Progress</h3>
-                    <div class="chart-filters">
-                        <select id="strokeFilter" class="filter-select" aria-label="Filter by Stroke">
-                            <option value="all">All Strokes</option>
-                            <option value="FR">Freestyle</option>
-                            <option value="BK">Backstroke</option>
-                            <option value="BR">Breaststroke</option>
-                            <option value="FL">Butterfly</option>
-                            <option value="IM">Individual Medley</option>
-                        </select>
-                        <select id="distanceFilter" class="filter-select" aria-label="Filter by Distance">
-                            <option value="all">All Distances</option>
-                            <option value="50" selected>50</option>
-                            <option value="100">100</option>
-                            <option value="200">200</option>
-                            <option value="500">500</option>
-                        </select>
-                        <select id="courseFilter" class="filter-select" aria-label="Filter by Course">
-                            <option value="all">All Courses</option>
-                            <option value="SCY" selected>SCY</option>
-                            <option value="SCM">SCM</option>
-                            <option value="LCM">LCM</option>
-                        </select>
+            <section class="chart-section collapsible-section">
+                <div class="section-header collapsible" data-target="progressSection">
+                    <div class="section-header-content">
+                        <h3 class="section-title">Progress</h3>
+                        <div class="chart-filters">
+                            <select id="strokeFilter" class="filter-select" aria-label="Filter by Stroke" onclick="event.stopPropagation()">
+                                <option value="all">All Strokes</option>
+                                <option value="FR">Freestyle</option>
+                                <option value="BK">Backstroke</option>
+                                <option value="BR">Breaststroke</option>
+                                <option value="FL">Butterfly</option>
+                                <option value="IM">Individual Medley</option>
+                            </select>
+                            <select id="distanceFilter" class="filter-select" aria-label="Filter by Distance" onclick="event.stopPropagation()">
+                                <option value="all">All Distances</option>
+                                <option value="50" selected>50</option>
+                                <option value="100">100</option>
+                                <option value="200">200</option>
+                                <option value="500">500</option>
+                            </select>
+                            <select id="courseFilter" class="filter-select" aria-label="Filter by Course" onclick="event.stopPropagation()">
+                                <option value="all">All Courses</option>
+                                <option value="SCY" selected>SCY</option>
+                                <option value="SCM">SCM</option>
+                                <option value="LCM">LCM</option>
+                            </select>
+                            <select id="excludeFilter" class="filter-select" aria-label="Exclude Events" onclick="event.stopPropagation()">
+                                <option value="">No Exclusions</option>
+                            </select>
+                        </div>
                     </div>
+                    <span class="collapse-icon">▼</span>
                 </div>
-                <div class="chart-container">
-                    <canvas id="progressChart"></canvas>
-                </div>
-                <div id="progressInsights" class="progress-insights">
-                    <h4 class="insights-title">Projections</h4>
-                    <div id="progressInsightsContent">
-                        <!-- Populated by JS -->
+                <div class="section-content collapsed" id="progressSection">
+                    <div class="chart-container">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                    <div id="progressInsights" class="progress-insights">
+                        <h4 class="insights-title">Projections</h4>
+                        <div id="progressInsightsContent">
+                            <!-- Populated by JS -->
+                        </div>
                     </div>
                 </div>
             </section>
 
             <!-- Gap Analysis - What's Next -->
-            <section class="gap-section">
-                <h3 class="section-title">Goals for next Time Standards</h3>
-                <div class="chart-container">
-                    <canvas id="gapChart"></canvas>
+            <section class="gap-section collapsible-section">
+                <div class="section-header collapsible" data-target="gapSection">
+                    <h3 class="section-title">Goals for next Time Standards</h3>
+                    <span class="collapse-icon">▼</span>
+                </div>
+                <div class="section-content collapsed" id="gapSection">
+                    <div class="chart-container">
+                        <canvas id="gapChart"></canvas>
+                    </div>
                 </div>
             </section>
 
             <!-- Upcoming Meets Strategy -->
-            <section class="meets-section">
-                <div class="section-header">
-                    <h3 class="section-title">Meet Strategy - AI Driven Recommendations</h3>
-                    <div class="priority-filters">
-                        <button class="priority-filter-btn active" data-priority="all">All</button>
-                        <button class="priority-filter-btn" data-priority="high">High Priority</button>
-                        <button class="priority-filter-btn" data-priority="medium">Medium Priority</button>
-                        <button class="priority-filter-btn" data-priority="low">Low Priority</button>
+            <section class="meets-section collapsible-section">
+                <div class="section-header collapsible" data-target="meetSection">
+                    <div class="section-header-content">
+                        <h3 class="section-title">Meet Strategy - AI Driven Recommendations</h3>
+                        <div class="priority-filters">
+                            <button class="priority-filter-btn active" data-priority="all" onclick="event.stopPropagation()">All</button>
+                            <button class="priority-filter-btn" data-priority="high" onclick="event.stopPropagation()">High Priority</button>
+                            <button class="priority-filter-btn" data-priority="medium" onclick="event.stopPropagation()">Medium Priority</button>
+                            <button class="priority-filter-btn" data-priority="low" onclick="event.stopPropagation()">Low Priority</button>
+                        </div>
                     </div>
+                    <span class="collapse-icon">▼</span>
                 </div>
-                <div id="meetStrategy" class="meet-strategy">
-                    <!-- Populated by JS -->
+                <div class="section-content collapsed" id="meetSection">
+                    <div id="meetStrategy" class="meet-strategy">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </section>
 
             <!-- Practice Strategy - Elite Coaching -->
-            <section class="practice-section">
-                <h3 class="section-title">Elite Training Plan - Detailed Coaching</h3>
-                <div class="practice-intro">
-                    <p>World-class training recommendations based on Olympic coaching methodology. Each recommendation includes specific drills, sets, and technique focus areas to maximize improvement.</p>
+            <section class="practice-section collapsible-section">
+                <div class="section-header collapsible" data-target="practiceSection">
+                    <h3 class="section-title">Elite Training Plan - Detailed Coaching</h3>
+                    <span class="collapse-icon">▼</span>
                 </div>
-                <div id="practiceStrategy" class="practice-strategy">
-                    <!-- Populated by JS -->
+                <div class="section-content collapsed" id="practiceSection">
+                    <div class="practice-intro">
+                        <p>World-class training recommendations based on Olympic coaching methodology. Each recommendation includes specific drills, sets, and technique focus areas to maximize improvement.</p>
+                    </div>
+                    <div id="practiceStrategy" class="practice-strategy">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </section>
 
             <!-- Personal Records - Simple Table -->
-            <section class="records-section">
-                <h3 class="section-title">Personal Best Times</h3>
-                <div id="recordsTable" class="records-table">
-                    <!-- Populated by JS -->
+            <section class="records-section collapsible-section">
+                <div class="section-header collapsible" data-target="recordsSection">
+                    <h3 class="section-title">Personal Best Times</h3>
+                    <span class="collapse-icon">▼</span>
+                </div>
+                <div class="section-content collapsed" id="recordsSection">
+                    <div id="recordsTable" class="records-table">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </section>
 
             <!-- Timeline - Journey Visualization -->
-            <section class="timeline-section">
-                <h3 class="section-title">Journey</h3>
-                <div class="chart-container">
-                    <canvas id="timelineChart"></canvas>
+            <section class="timeline-section collapsible-section">
+                <div class="section-header collapsible" data-target="timelineSection">
+                    <h3 class="section-title">Journey</h3>
+                    <span class="collapse-icon">▼</span>
+                </div>
+                <div class="section-content collapsed" id="timelineSection">
+                    <div class="chart-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
                 </div>
             </section>
         </main>
