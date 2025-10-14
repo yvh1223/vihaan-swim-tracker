@@ -1258,6 +1258,153 @@ section {
     .record-group-items {
         grid-template-columns: 1fr;
     }
+
+    /* Mobile-Optimized Tables - Card Layout */
+    .insights-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .insights-header {
+        display: none;
+    }
+
+    .insights-row {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        padding: var(--space-md);
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        margin-bottom: var(--space-sm);
+        border-top: none;
+    }
+
+    .insights-row > * {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .insights-row > *::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+    }
+
+    .insight-event::before { content: "Event"; }
+    .insight-current::before { content: "Current"; }
+    .insight-target::before { content: "Target"; }
+    .insight-gap::before { content: "Gap"; }
+    .insight-timeline::before { content: "Timeline"; }
+
+    /* Meet Strategy Table - Mobile Cards */
+    .strategy-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .strategy-header {
+        display: none;
+    }
+
+    .strategy-row {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        padding: var(--space-md);
+        background: var(--bg);
+        border-radius: 8px;
+        margin-bottom: var(--space-sm);
+        border: 1px solid var(--border);
+    }
+
+    .strategy-row.priority-high {
+        background: rgba(52, 199, 89, 0.05);
+        border-color: var(--success);
+    }
+
+    .strategy-row > * {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+
+    .strategy-row > *::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+    }
+
+    .priority-badge::before { content: "Priority"; }
+    .strategy-event::before { content: "Event"; }
+    .strategy-current::before { content: "Current"; }
+    .strategy-target::before { content: "Target"; }
+    .strategy-gap::before { content: "Gap"; }
+    .strategy-confidence::before { content: "Confidence"; }
+    .strategy-justification::before { content: "Why"; }
+
+    /* Touch-Friendly Buttons and Interactions */
+    .control-btn,
+    .priority-filter-btn,
+    .filter-select {
+        min-height: 44px;
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .collapsible {
+        min-height: 44px;
+        padding: var(--space-sm);
+    }
+
+    .phase-header.collapsible,
+    .practice-event-header.collapsible {
+        min-height: 48px;
+    }
+
+    /* Better Spacing for Touch */
+    .global-controls {
+        gap: var(--space-md);
+    }
+
+    .priority-filters {
+        gap: var(--space-sm);
+    }
+
+    /* Optimize Best Times for Mobile */
+    .best-times-table {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: var(--space-sm);
+    }
+
+    /* Practice Strategy Mobile Optimization */
+    .practice-event {
+        padding: var(--space-md);
+    }
+
+    .practice-event-header {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .event-header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* Reduce Animation Delays on Mobile for Faster Feel */
+    .stat-card,
+    .collapsible-section {
+        animation-delay: 0s !important;
+    }
 }
 
 /* Dark Mode Support (System Preference) */

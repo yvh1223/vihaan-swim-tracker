@@ -36,12 +36,12 @@
             <!-- Stats Grid - Key Metrics Only -->
             <section class="stats">
                 <div class="stat-card">
-                    <div class="stat-value" id="bbCount">0</div>
-                    <div class="stat-label">BB Times</div>
-                </div>
-                <div class="stat-card">
                     <div class="stat-value" id="bCount">0</div>
                     <div class="stat-label">B Times</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="bbCount">0</div>
+                    <div class="stat-label">BB Times</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="aCount">0</div>
@@ -53,11 +53,11 @@
                 </div>
             </section>
 
-            <!-- Progress Chart - The Star of the Show -->
+            <!-- Progress Chart - How I'm Improving -->
             <section class="chart-section collapsible-section">
                 <div class="section-header collapsible" data-target="progressSection">
                     <div class="section-header-content">
-                        <h3 class="section-title">Progress</h3>
+                        <h3 class="section-title">Progress Over Time</h3>
                         <div class="chart-filters">
                             <select id="strokeFilter" class="filter-select" aria-label="Filter by Stroke" onclick="event.stopPropagation()">
                                 <option value="all">All Strokes</option>
@@ -83,6 +83,10 @@
                             <select id="excludeFilter" class="filter-select" aria-label="Exclude Events" onclick="event.stopPropagation()">
                                 <option value="">No Exclusions</option>
                             </select>
+                            <select id="projectionToggle" class="filter-select" aria-label="Show Projections" onclick="event.stopPropagation()">
+                                <option value="show">With Projections</option>
+                                <option value="hide">Data Only</option>
+                            </select>
                         </div>
                     </div>
                     <span class="collapse-icon">▲</span>
@@ -103,7 +107,7 @@
             <!-- Gap Analysis - What's Next -->
             <section class="gap-section collapsible-section">
                 <div class="section-header collapsible" data-target="gapSection">
-                    <h3 class="section-title">Goals for next Time Standards</h3>
+                    <h3 class="section-title">Next Goals - Time to Beat</h3>
                     <span class="collapse-icon">▼</span>
                 </div>
                 <div class="section-content collapsed" id="gapSection">
@@ -117,7 +121,7 @@
             <section class="meets-section collapsible-section">
                 <div class="section-header collapsible" data-target="meetSection">
                     <div class="section-header-content">
-                        <h3 class="section-title">Meet Strategy - AI Driven Recommendations</h3>
+                        <h3 class="section-title">Meet Strategy - What to Swim</h3>
                         <div class="priority-filters">
                             <button class="priority-filter-btn active" data-priority="all" onclick="event.stopPropagation()">All</button>
                             <button class="priority-filter-btn" data-priority="high" onclick="event.stopPropagation()">High Priority</button>
@@ -137,7 +141,7 @@
             <!-- Practice Strategy - Elite Coaching -->
             <section class="practice-section collapsible-section">
                 <div class="section-header collapsible" data-target="practiceSection">
-                    <h3 class="section-title">Elite Training Plan - Detailed Coaching</h3>
+                    <h3 class="section-title">Training Plan - How to Improve</h3>
                     <span class="collapse-icon">▼</span>
                 </div>
                 <div class="section-content collapsed" id="practiceSection">
@@ -150,23 +154,10 @@
                 </div>
             </section>
 
-            <!-- Personal Records - Simple Table -->
-            <section class="records-section collapsible-section">
-                <div class="section-header collapsible" data-target="recordsSection">
-                    <h3 class="section-title">Personal Best Times</h3>
-                    <span class="collapse-icon">▼</span>
-                </div>
-                <div class="section-content collapsed" id="recordsSection">
-                    <div id="recordsTable" class="records-table">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </section>
-
             <!-- Timeline - Journey Visualization -->
             <section class="timeline-section collapsible-section">
                 <div class="section-header collapsible" data-target="timelineSection">
-                    <h3 class="section-title">Journey</h3>
+                    <h3 class="section-title">My Journey</h3>
                     <span class="collapse-icon">▼</span>
                 </div>
                 <div class="section-content collapsed" id="timelineSection">

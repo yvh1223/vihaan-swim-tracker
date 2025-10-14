@@ -15,7 +15,8 @@ class SwimTracker {
             stroke: 'all',
             distance: '50',
             course: 'SCY',
-            exclude: ''
+            exclude: '',
+            showProjections: true // Default to showing projections
         };
         this.insightsSortConfig = {
             column: 'timeline', // default sort by timeline
@@ -132,32 +133,41 @@ class SwimTracker {
         const courseFilter = document.getElementById('courseFilter');
 
         if (strokeFilter) {
-            strokeFilter.addEventListener('change', (e) => {
+            strokeFilter.addEventListener('change', async (e) => {
                 this.filters.stroke = e.target.value;
-                this.renderProgressChart();
+                await this.renderProgressChart();
             });
         }
 
         if (distanceFilter) {
-            distanceFilter.addEventListener('change', (e) => {
+            distanceFilter.addEventListener('change', async (e) => {
                 this.filters.distance = e.target.value;
-                this.renderProgressChart();
+                await this.renderProgressChart();
             });
         }
 
         if (courseFilter) {
-            courseFilter.addEventListener('change', (e) => {
+            courseFilter.addEventListener('change', async (e) => {
                 this.filters.course = e.target.value;
-                this.renderProgressChart();
+                await this.renderProgressChart();
             });
         }
 
         // Exclude filter event listener
         const excludeFilter = document.getElementById('excludeFilter');
         if (excludeFilter) {
-            excludeFilter.addEventListener('change', (e) => {
+            excludeFilter.addEventListener('change', async (e) => {
                 this.filters.exclude = e.target.value;
-                this.renderProgressChart();
+                await this.renderProgressChart();
+            });
+        }
+
+        // Projection toggle event listener
+        const projectionToggle = document.getElementById('projectionToggle');
+        if (projectionToggle) {
+            projectionToggle.addEventListener('change', async (e) => {
+                this.filters.showProjections = e.target.value === 'show';
+                await this.renderProgressChart();
             });
         }
 
@@ -313,7 +323,7 @@ class SwimTracker {
     async renderCharts() {
         if (!this.currentSwimmer) return;
 
-        this.renderProgressChart();
+        await this.renderProgressChart();
         await this.renderGapChart();
         await this.renderMeetStrategy();
         await this.renderPracticeStrategy();
@@ -390,7 +400,7 @@ class SwimTracker {
         return trend.slope * timestamp + trend.intercept;
     }
 
-    renderProgressChart() {
+    async renderProgressChart() {
         const canvas = document.getElementById('progressChart');
         if (!canvas) return;
 
@@ -447,8 +457,12 @@ class SwimTracker {
 
         const datasets = [];
         const projectionMonths = 3; // Project 3 months ahead
+        const targetStandardsInfo = {}; // Store target info for reference lines
 
-        Object.entries(eventGroups).forEach(([event, data], index) => {
+        // First pass: create datasets and gather target standard info
+        for (const [event, data] of Object.entries(eventGroups)) {
+            const index = Object.keys(eventGroups).indexOf(event);
+
             // Main data line
             datasets.push({
                 label: event,
@@ -461,8 +475,8 @@ class SwimTracker {
                 tension: 0.3
             });
 
-            // Add monthly projections extending to March 2026
-            if (data.length >= 3) {
+            // Add monthly projections extending to March 2026 (if enabled)
+            if (data.length >= 3 && this.filters.showProjections) {
                 const trend = this.calculateTrend(data);
                 if (trend && trend.slope < 0) { // Only show if improving (negative slope)
                     const lastDate = data[data.length - 1].x;
@@ -502,10 +516,237 @@ class SwimTracker {
                             tension: 0,
                             hidden: false
                         });
+
+                        // Get target standard for this event
+                        const currentTime = data[data.length - 1].y;
+                        const currentResult = results.find(r =>
+                            r.event_name === event &&
+                            Math.abs(r.time_seconds - currentTime) < 0.1
+                        );
+
+                        // Determine next target standard
+                        let targetStandard = null;
+                        if (!currentResult?.time_standard || currentResult.time_standard === 'B') {
+                            targetStandard = 'BB';
+                        } else if (currentResult.time_standard === 'BB') {
+                            targetStandard = 'A';
+                        } else if (currentResult.time_standard === 'A') {
+                            targetStandard = 'AA';
+                        }
+
+                        if (targetStandard) {
+                            // Fetch target time from database
+                            const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
+                            let ageGroup = '10 & under';
+                            if (this.currentSwimmer.current_age >= 13) {
+                                ageGroup = '13-14';
+                            } else if (this.currentSwimmer.current_age >= 11) {
+                                ageGroup = '11-12';
+                            }
+
+                            const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
+                            const targetTime = await this.getTimeStandard(
+                                baseEvent,
+                                ageGroup,
+                                genderForDB,
+                                `${targetStandard.toLowerCase()}_standard`
+                            );
+
+                            if (targetTime && targetTime < currentTime) {
+                                // Find intersection point between projection and target
+                                let intersectionDate = null;
+                                for (let i = 1; i < projectionData.length; i++) {
+                                    const prev = projectionData[i - 1];
+                                    const curr = projectionData[i];
+
+                                    // Check if target line crosses between these two points
+                                    if (prev.y >= targetTime && curr.y <= targetTime) {
+                                        // Linear interpolation to find exact intersection
+                                        const ratio = (targetTime - prev.y) / (curr.y - prev.y);
+                                        const timeDiff = curr.x.getTime() - prev.x.getTime();
+                                        intersectionDate = new Date(prev.x.getTime() + (ratio * timeDiff));
+                                        break;
+                                    }
+                                }
+
+                                targetStandardsInfo[event] = {
+                                    targetTime,
+                                    targetStandard,
+                                    color: this.getColor(index),
+                                    intersectionDate,
+                                    trend
+                                };
+                            }
+                        }
                     }
                 }
             }
-        });
+        }
+
+        // Capture this context for use in plugins
+        const self = this;
+
+        // Custom plugin to draw event labels on the lines
+        const lineLabelsPlugin = {
+            id: 'lineLabels',
+            afterDatasetsDraw: (chart) => {
+                const ctx = chart.ctx;
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    // Skip projection lines
+                    if (dataset.label.includes('(projected)')) return;
+
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    if (!meta.data.length) return;
+
+                    // Get the last point in the line
+                    const lastPoint = meta.data[meta.data.length - 1];
+                    const x = lastPoint.x;
+                    const y = lastPoint.y;
+
+                    // Draw label
+                    ctx.save();
+                    ctx.fillStyle = dataset.borderColor;
+                    ctx.font = 'bold 11px Inter';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+
+                    // Add padding to the right of the point
+                    const label = dataset.label;
+                    ctx.fillText(label, x + 8, y);
+                    ctx.restore();
+                });
+            }
+        };
+
+        // Identify standard achievement points for each event
+        // Calculate time standards correctly based on swimmer's age at each event
+        const standardAchievements = {};
+        const standardOrder = { 'B': 1, 'BB': 2, 'A': 3, 'AA': 4, 'AAA': 5, 'AAAA': 6 };
+
+        // Map gender to database format (Boys/Girls)
+        const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
+
+        // Pre-calculate all standards asynchronously
+        for (const [event, data] of Object.entries(eventGroups)) {
+            const eventResults = results
+                .filter(r => r.event_name === event)
+                .sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
+
+            if (eventResults.length === 0) continue;
+
+            const achievements = [];
+            let bestStandardLevel = 0; // Track the best standard achieved so far
+
+            // Calculate correct time standard for each result based on age at that time
+            for (const result of eventResults) {
+                // Use the age from the result (stored at time of competition)
+                // If not available, fall back to current_age
+                const ageAtEvent = result.age || this.currentSwimmer.current_age || 10;
+
+                // Determine age group for time standards
+                let ageGroup = '10 & under';
+                if (ageAtEvent >= 13) {
+                    ageGroup = '13-14';
+                } else if (ageAtEvent >= 11) {
+                    ageGroup = '11-12';
+                }
+
+                // Get the base event name (without course)
+                const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
+
+                // Calculate the correct time standard by checking against each level
+                let calculatedStandard = null;
+                const timeSeconds = result.time_seconds;
+
+                // Check from best to worst: AAAA -> AAA -> AA -> A -> BB -> B
+                const standardsToCheck = ['aaaa', 'aaa', 'aa', 'a', 'bb', 'b'];
+                for (const stdLevel of standardsToCheck) {
+                    const targetTime = await this.getTimeStandard(
+                        baseEvent,
+                        ageGroup,
+                        genderForDB,
+                        `${stdLevel}_standard`
+                    );
+
+                    if (targetTime && timeSeconds <= targetTime) {
+                        calculatedStandard = stdLevel.toUpperCase();
+                        break;
+                    }
+                }
+
+                if (calculatedStandard) {
+                    const currentLevel = standardOrder[calculatedStandard] || 0;
+
+                    // Only mark as achievement if this is a NEW BEST standard
+                    if (currentLevel > bestStandardLevel) {
+                        achievements.push({
+                            date: new Date(result.event_date),
+                            time: result.time_seconds,
+                            standard: calculatedStandard
+                        });
+                        bestStandardLevel = currentLevel;
+                    }
+                }
+            }
+
+            if (achievements.length > 0) {
+                standardAchievements[event] = achievements;
+            }
+        }
+
+        // Custom plugin to draw standard achievement labels
+        const standardLabelsPlugin = {
+            id: 'standardLabels',
+            afterDatasetsDraw: (chart) => {
+                const ctx = chart.ctx;
+                const xScale = chart.scales.x;
+                const yScale = chart.scales.y;
+
+                // Draw standard labels at achievement points
+                Object.entries(standardAchievements).forEach(([event, achievements]) => {
+                    const dataset = chart.data.datasets.find(d => d.label === event);
+                    if (!dataset) return;
+
+                    const color = dataset.borderColor;
+
+                    achievements.forEach(achievement => {
+                        const xPixel = xScale.getPixelForValue(achievement.date);
+                        const yPixel = yScale.getPixelForValue(achievement.time);
+
+                        // Draw background badge
+                        ctx.save();
+                        ctx.font = 'bold 11px Inter';
+                        const text = achievement.standard;
+                        const textWidth = ctx.measureText(text).width;
+                        const padding = 4;
+                        const badgeWidth = textWidth + padding * 2;
+                        const badgeHeight = 16;
+
+                        // Draw badge background
+                        ctx.fillStyle = color;
+                        ctx.globalAlpha = 0.9;
+                        ctx.beginPath();
+                        ctx.roundRect(
+                            xPixel - badgeWidth / 2,
+                            yPixel - badgeHeight - 6,
+                            badgeWidth,
+                            badgeHeight,
+                            3
+                        );
+                        ctx.fill();
+
+                        // Draw text
+                        ctx.fillStyle = '#fff';
+                        ctx.globalAlpha = 1;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(text, xPixel, yPixel - badgeHeight / 2 - 6);
+
+                        ctx.restore();
+                    });
+                });
+            }
+        };
 
         this.charts.progress = new Chart(ctx, {
             type: 'line',
@@ -517,15 +758,14 @@ class SwimTracker {
                     mode: 'nearest',
                     intersect: false
                 },
+                layout: {
+                    padding: {
+                        right: 100 // Add space for labels on the right
+                    }
+                },
                 plugins: {
                     legend: {
-                        position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 15,
-                            font: { size: 12, family: 'Inter' },
-                            filter: (item) => !item.text.includes('(projected)') // Hide projection from legend
-                        }
+                        display: false // Hide legend since we have inline labels
                     },
                     tooltip: {
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -544,7 +784,7 @@ class SwimTracker {
                             },
                             label: (context) => {
                                 const label = context.dataset.label || '';
-                                const value = this.formatTime(context.parsed.y);
+                                const value = self.formatTime(context.parsed.y);
                                 return `${label}: ${value}`;
                             }
                         }
@@ -571,7 +811,8 @@ class SwimTracker {
                         }
                     }
                 }
-            }
+            },
+            plugins: [lineLabelsPlugin, standardLabelsPlugin]
         });
 
         // Populate exclude filter dropdown with available events
@@ -605,6 +846,12 @@ class SwimTracker {
         const container = document.getElementById('progressInsights');
         const contentContainer = document.getElementById('progressInsightsContent');
         if (!container || !contentContainer) return;
+
+        // Hide insights if projections are disabled
+        if (!this.filters.showProjections) {
+            container.classList.remove('has-insights');
+            return;
+        }
 
         const insights = [];
 
@@ -650,6 +897,7 @@ class SwimTracker {
                 }
 
                 const standardColumn = `${targetStandard.toLowerCase()}_standard`;
+                const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
 
                 try {
                     const { data: standards } = await this.supabase
@@ -657,7 +905,7 @@ class SwimTracker {
                         .select(standardColumn)
                         .eq('event_name', baseEvent)
                         .eq('age_group', ageGroup)
-                        .eq('gender', this.currentSwimmer.gender || 'M')
+                        .eq('gender', genderForDB)
                         .limit(1);
 
                     if (standards && standards.length > 0 && standards[0][standardColumn]) {
@@ -895,6 +1143,7 @@ class SwimTracker {
 
                     // Determine column name for target standard
                     const standardColumn = `${targetStandard.toLowerCase()}_standard`;
+                    const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
 
                     // Query time standards table for target time
                     const { data: standards, error } = await this.supabase
@@ -902,7 +1151,7 @@ class SwimTracker {
                         .select(`${standardColumn}`)
                         .eq('event_name', baseEvent)
                         .eq('age_group', ageGroup)
-                        .eq('gender', this.currentSwimmer.gender || 'M')
+                        .eq('gender', genderForDB)
                         .limit(1);
 
                     if (!error && standards && standards.length > 0 && standards[0][standardColumn]) {
@@ -1105,12 +1354,14 @@ class SwimTracker {
                     }
 
                     const standardColumn = `${targetStandard.toLowerCase()}_standard`;
+                    const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
+
                     const { data: standards } = await this.supabase
                         .from('time_standards')
                         .select(standardColumn)
                         .eq('event_name', baseEvent)
                         .eq('age_group', ageGroup)
-                        .eq('gender', this.currentSwimmer.gender || 'M')
+                        .eq('gender', genderForDB)
                         .limit(1);
 
                     if (standards && standards.length > 0 && standards[0][standardColumn]) {
