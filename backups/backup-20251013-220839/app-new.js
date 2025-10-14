@@ -14,17 +14,13 @@ class SwimTracker {
         this.filters = {
             stroke: 'all',
             distance: '50',
-            course: 'SCY',
-            exclude: '',
-            showProjections: true // Default to showing projections
+            course: 'SCY'
         };
         this.insightsSortConfig = {
             column: 'timeline', // default sort by timeline
             direction: 'asc'
         };
         this.cachedInsights = [];
-        this.priorityFilter = 'all'; // For Meet Strategy filtering
-        this.timeStandardsCache = {}; // Cache for time standards lookups
         this.init();
     }
 
@@ -133,83 +129,23 @@ class SwimTracker {
         const courseFilter = document.getElementById('courseFilter');
 
         if (strokeFilter) {
-            strokeFilter.addEventListener('change', async (e) => {
+            strokeFilter.addEventListener('change', (e) => {
                 this.filters.stroke = e.target.value;
-                await this.renderProgressChart();
+                this.renderProgressChart();
             });
         }
 
         if (distanceFilter) {
-            distanceFilter.addEventListener('change', async (e) => {
+            distanceFilter.addEventListener('change', (e) => {
                 this.filters.distance = e.target.value;
-                await this.renderProgressChart();
+                this.renderProgressChart();
             });
         }
 
         if (courseFilter) {
-            courseFilter.addEventListener('change', async (e) => {
+            courseFilter.addEventListener('change', (e) => {
                 this.filters.course = e.target.value;
-                await this.renderProgressChart();
-            });
-        }
-
-        // Exclude filter event listener
-        const excludeFilter = document.getElementById('excludeFilter');
-        if (excludeFilter) {
-            excludeFilter.addEventListener('change', async (e) => {
-                this.filters.exclude = e.target.value;
-                await this.renderProgressChart();
-            });
-        }
-
-        // Projection toggle event listener
-        const projectionToggle = document.getElementById('projectionToggle');
-        if (projectionToggle) {
-            projectionToggle.addEventListener('change', async (e) => {
-                this.filters.showProjections = e.target.value === 'show';
-                await this.renderProgressChart();
-            });
-        }
-
-        // Priority filter event listeners
-        const priorityButtons = document.querySelectorAll('.priority-filter-btn');
-        priorityButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                // Remove active class from all buttons
-                priorityButtons.forEach(b => b.classList.remove('active'));
-                // Add active class to clicked button
-                e.target.classList.add('active');
-                // Update filter and re-render
-                this.priorityFilter = e.target.dataset.priority;
-                this.filterMeetStrategy();
-            });
-        });
-
-        // Expand All / Collapse All button event listeners
-        const expandAllBtn = document.getElementById('expandAll');
-        const collapseAllBtn = document.getElementById('collapseAll');
-
-        if (expandAllBtn) {
-            expandAllBtn.addEventListener('click', () => {
-                document.querySelectorAll('.section-content, .practice-event-content, .phase-content').forEach(el => {
-                    el.classList.remove('collapsed');
-                    const header = document.querySelector(`[data-target="${el.id}"]`);
-                    const icon = header?.querySelector('.collapse-icon');
-                    if (icon) icon.textContent = '▲';
-                });
-            });
-        }
-
-        if (collapseAllBtn) {
-            collapseAllBtn.addEventListener('click', () => {
-                document.querySelectorAll('.section-content, .practice-event-content, .phase-content').forEach(el => {
-                    if (!el.classList.contains('collapsed')) {
-                        el.classList.add('collapsed');
-                        const header = document.querySelector(`[data-target="${el.id}"]`);
-                        const icon = header?.querySelector('.collapse-icon');
-                        if (icon) icon.textContent = '▼';
-                    }
-                });
+                this.renderProgressChart();
             });
         }
     }
@@ -323,55 +259,10 @@ class SwimTracker {
     async renderCharts() {
         if (!this.currentSwimmer) return;
 
-        await this.renderProgressChart();
+        this.renderProgressChart();
         await this.renderGapChart();
         await this.renderMeetStrategy();
-        await this.renderPracticeStrategy();
         this.renderTimelineChart();
-    }
-
-    // Helper method to get time standard with caching
-    async getTimeStandard(baseEvent, ageGroup, gender, standardColumn) {
-        const cacheKey = `${baseEvent}|${ageGroup}|${gender}|${standardColumn}`;
-
-        // Check cache first
-        if (this.timeStandardsCache[cacheKey] !== undefined) {
-            return this.timeStandardsCache[cacheKey];
-        }
-
-        try {
-            const { data: standards } = await this.supabase
-                .from('time_standards')
-                .select(standardColumn)
-                .eq('event_name', baseEvent)
-                .eq('age_group', ageGroup)
-                .eq('gender', gender)
-                .limit(1);
-
-            const value = (standards && standards.length > 0 && standards[0][standardColumn])
-                ? parseFloat(standards[0][standardColumn])
-                : null;
-
-            // Cache the result
-            this.timeStandardsCache[cacheKey] = value;
-            return value;
-        } catch (err) {
-            console.warn(`Could not fetch standard for ${baseEvent}:`, err);
-            return null;
-        }
-    }
-
-    // Filter meet strategy by priority
-    filterMeetStrategy() {
-        const rows = document.querySelectorAll('.strategy-row');
-        rows.forEach(row => {
-            const priority = row.dataset.priority;
-            if (this.priorityFilter === 'all' || priority === this.priorityFilter) {
-                row.classList.remove('hidden');
-            } else {
-                row.classList.add('hidden');
-            }
-        });
     }
 
     // Calculate linear regression for trend projection
@@ -400,7 +291,7 @@ class SwimTracker {
         return trend.slope * timestamp + trend.intercept;
     }
 
-    async renderProgressChart() {
+    renderProgressChart() {
         const canvas = document.getElementById('progressChart');
         if (!canvas) return;
 
@@ -435,11 +326,6 @@ class SwimTracker {
                 return false;
             }
 
-            // Exclude filter - hide specific event if selected
-            if (this.filters.exclude && this.filters.exclude !== '' && eventName === this.filters.exclude) {
-                return false;
-            }
-
             return true;
         });
 
@@ -457,12 +343,8 @@ class SwimTracker {
 
         const datasets = [];
         const projectionMonths = 3; // Project 3 months ahead
-        const targetStandardsInfo = {}; // Store target info for reference lines
 
-        // First pass: create datasets and gather target standard info
-        for (const [event, data] of Object.entries(eventGroups)) {
-            const index = Object.keys(eventGroups).indexOf(event);
-
+        Object.entries(eventGroups).forEach(([event, data], index) => {
             // Main data line
             datasets.push({
                 label: event,
@@ -475,8 +357,8 @@ class SwimTracker {
                 tension: 0.3
             });
 
-            // Add monthly projections extending to March 2026 (if enabled)
-            if (data.length >= 3 && this.filters.showProjections) {
+            // Add monthly projections extending to March 2026
+            if (data.length >= 3) {
                 const trend = this.calculateTrend(data);
                 if (trend && trend.slope < 0) { // Only show if improving (negative slope)
                     const lastDate = data[data.length - 1].x;
@@ -516,238 +398,10 @@ class SwimTracker {
                             tension: 0,
                             hidden: false
                         });
-
-                        // Get target standard for this event
-                        const currentTime = data[data.length - 1].y;
-                        const currentResult = results.find(r =>
-                            r.event_name === event &&
-                            Math.abs(r.time_seconds - currentTime) < 0.1
-                        );
-
-                        // Determine next target standard
-                        let targetStandard = null;
-                        if (!currentResult?.time_standard || currentResult.time_standard === 'B') {
-                            targetStandard = 'BB';
-                        } else if (currentResult.time_standard === 'BB') {
-                            targetStandard = 'A';
-                        } else if (currentResult.time_standard === 'A') {
-                            targetStandard = 'AA';
-                        }
-
-                        if (targetStandard) {
-                            // Fetch target time from database
-                            const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
-                            let ageGroup = '10 & under';
-                            if (this.currentSwimmer.current_age >= 13) {
-                                ageGroup = '13-14';
-                            } else if (this.currentSwimmer.current_age >= 11) {
-                                ageGroup = '11-12';
-                            }
-
-                            const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
-                            const targetTime = await this.getTimeStandard(
-                                baseEvent,
-                                ageGroup,
-                                genderForDB,
-                                `${targetStandard.toLowerCase()}_standard`
-                            );
-
-                            if (targetTime && targetTime < currentTime) {
-                                // Find intersection point between projection and target
-                                let intersectionDate = null;
-                                for (let i = 1; i < projectionData.length; i++) {
-                                    const prev = projectionData[i - 1];
-                                    const curr = projectionData[i];
-
-                                    // Check if target line crosses between these two points
-                                    if (prev.y >= targetTime && curr.y <= targetTime) {
-                                        // Linear interpolation to find exact intersection
-                                        const ratio = (targetTime - prev.y) / (curr.y - prev.y);
-                                        const timeDiff = curr.x.getTime() - prev.x.getTime();
-                                        intersectionDate = new Date(prev.x.getTime() + (ratio * timeDiff));
-                                        break;
-                                    }
-                                }
-
-                                targetStandardsInfo[event] = {
-                                    targetTime,
-                                    targetStandard,
-                                    color: this.getColor(index),
-                                    intersectionDate,
-                                    trend
-                                };
-                            }
-                        }
                     }
                 }
             }
-        }
-
-        // Capture this context for use in plugins
-        const self = this;
-
-        // Custom plugin to draw event labels on the lines
-        const lineLabelsPlugin = {
-            id: 'lineLabels',
-            afterDatasetsDraw: (chart) => {
-                const ctx = chart.ctx;
-                chart.data.datasets.forEach((dataset, datasetIndex) => {
-                    // Skip projection lines
-                    if (dataset.label.includes('(projected)')) return;
-
-                    const meta = chart.getDatasetMeta(datasetIndex);
-                    if (!meta.data.length) return;
-
-                    // Get the last point in the line
-                    const lastPoint = meta.data[meta.data.length - 1];
-                    const x = lastPoint.x;
-                    const y = lastPoint.y;
-
-                    // Draw label
-                    ctx.save();
-                    ctx.fillStyle = dataset.borderColor;
-                    ctx.font = 'bold 11px Inter';
-                    ctx.textAlign = 'left';
-                    ctx.textBaseline = 'middle';
-
-                    // Add padding to the right of the point
-                    const label = dataset.label;
-                    ctx.fillText(label, x + 8, y);
-                    ctx.restore();
-                });
-            }
-        };
-
-        // Identify standard achievement points for each event
-        // Calculate time standards correctly based on swimmer's age at each event
-        const standardAchievements = {};
-        const standardOrder = { 'B': 1, 'BB': 2, 'A': 3, 'AA': 4, 'AAA': 5, 'AAAA': 6 };
-
-        // Map gender to database format (Boys/Girls)
-        const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
-
-        // Pre-calculate all standards asynchronously
-        for (const [event, data] of Object.entries(eventGroups)) {
-            const eventResults = results
-                .filter(r => r.event_name === event)
-                .sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
-
-            if (eventResults.length === 0) continue;
-
-            const achievements = [];
-            let bestStandardLevel = 0; // Track the best standard achieved so far
-
-            // Calculate correct time standard for each result based on age at that time
-            for (const result of eventResults) {
-                // Use the age from the result (stored at time of competition)
-                // If not available, fall back to current_age
-                const ageAtEvent = result.age || this.currentSwimmer.current_age || 10;
-
-                // Determine age group for time standards
-                let ageGroup = '10 & under';
-                if (ageAtEvent >= 13) {
-                    ageGroup = '13-14';
-                } else if (ageAtEvent >= 11) {
-                    ageGroup = '11-12';
-                }
-
-                // Get the base event name (without course)
-                const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
-
-                // Calculate the correct time standard by checking against each level
-                let calculatedStandard = null;
-                const timeSeconds = result.time_seconds;
-
-                // Check from best to worst: AAAA -> AAA -> AA -> A -> BB -> B
-                const standardsToCheck = ['aaaa', 'aaa', 'aa', 'a', 'bb', 'b'];
-                for (const stdLevel of standardsToCheck) {
-                    const targetTime = await this.getTimeStandard(
-                        baseEvent,
-                        ageGroup,
-                        genderForDB,
-                        `${stdLevel}_standard`
-                    );
-
-                    if (targetTime && timeSeconds <= targetTime) {
-                        calculatedStandard = stdLevel.toUpperCase();
-                        break;
-                    }
-                }
-
-                if (calculatedStandard) {
-                    const currentLevel = standardOrder[calculatedStandard] || 0;
-
-                    // Only mark as achievement if this is a NEW BEST standard
-                    if (currentLevel > bestStandardLevel) {
-                        achievements.push({
-                            date: new Date(result.event_date),
-                            time: result.time_seconds,
-                            standard: calculatedStandard
-                        });
-                        bestStandardLevel = currentLevel;
-                    }
-                }
-            }
-
-            if (achievements.length > 0) {
-                standardAchievements[event] = achievements;
-            }
-        }
-
-        // Custom plugin to draw standard achievement labels
-        const standardLabelsPlugin = {
-            id: 'standardLabels',
-            afterDatasetsDraw: (chart) => {
-                const ctx = chart.ctx;
-                const xScale = chart.scales.x;
-                const yScale = chart.scales.y;
-
-                // Draw standard labels at achievement points
-                Object.entries(standardAchievements).forEach(([event, achievements]) => {
-                    const dataset = chart.data.datasets.find(d => d.label === event);
-                    if (!dataset) return;
-
-                    const color = dataset.borderColor;
-
-                    achievements.forEach(achievement => {
-                        const xPixel = xScale.getPixelForValue(achievement.date);
-                        const yPixel = yScale.getPixelForValue(achievement.time);
-
-                        // Draw background badge
-                        ctx.save();
-                        ctx.font = 'bold 11px Inter';
-                        const text = achievement.standard;
-                        const textWidth = ctx.measureText(text).width;
-                        const padding = 4;
-                        const badgeWidth = textWidth + padding * 2;
-                        const badgeHeight = 16;
-
-                        // Draw badge background
-                        ctx.fillStyle = color;
-                        ctx.globalAlpha = 0.9;
-                        ctx.beginPath();
-                        ctx.roundRect(
-                            xPixel - badgeWidth / 2,
-                            yPixel - badgeHeight - 6,
-                            badgeWidth,
-                            badgeHeight,
-                            3
-                        );
-                        ctx.fill();
-
-                        // Draw text
-                        ctx.fillStyle = '#fff';
-                        ctx.globalAlpha = 1;
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(text, xPixel, yPixel - badgeHeight / 2 - 6);
-
-                        ctx.restore();
-                    });
-                });
-            }
-        };
-
+        });
 
         this.charts.progress = new Chart(ctx, {
             type: 'line',
@@ -759,15 +413,15 @@ class SwimTracker {
                     mode: 'nearest',
                     intersect: false
                 },
-                layout: {
-                    padding: {
-                        left: 10, // Reduce left padding
-                        right: 100 // Add space for labels on the right
-                    }
-                },
                 plugins: {
                     legend: {
-                        display: false // Hide legend since we have inline labels
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { size: 12, family: 'Inter' },
+                            filter: (item) => !item.text.includes('(projected)') // Hide projection from legend
+                        }
                     },
                     tooltip: {
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -786,7 +440,7 @@ class SwimTracker {
                             },
                             label: (context) => {
                                 const label = context.dataset.label || '';
-                                const value = self.formatTime(context.parsed.y);
+                                const value = this.formatTime(context.parsed.y);
                                 return `${label}: ${value}`;
                             }
                         }
@@ -813,47 +467,17 @@ class SwimTracker {
                         }
                     }
                 }
-            },
-            plugins: [lineLabelsPlugin, standardLabelsPlugin]
+            }
         });
-
-        // Populate exclude filter dropdown with available events
-        this.populateExcludeFilter(eventGroups);
 
         // Generate insights
         this.generateProgressInsights(eventGroups);
-    }
-
-    populateExcludeFilter(eventGroups) {
-        const excludeFilter = document.getElementById('excludeFilter');
-        if (!excludeFilter) return;
-
-        // Get all unique event names
-        const eventNames = Object.keys(eventGroups).sort();
-
-        // Store current selection
-        const currentSelection = this.filters.exclude;
-
-        // Build options HTML
-        let optionsHTML = '<option value="">No Exclusions</option>';
-        eventNames.forEach(event => {
-            const selected = event === currentSelection ? 'selected' : '';
-            optionsHTML += `<option value="${event}" ${selected}>${event}</option>`;
-        });
-
-        excludeFilter.innerHTML = optionsHTML;
     }
 
     async generateProgressInsights(eventGroups) {
         const container = document.getElementById('progressInsights');
         const contentContainer = document.getElementById('progressInsightsContent');
         if (!container || !contentContainer) return;
-
-        // Hide insights if projections are disabled
-        if (!this.filters.showProjections) {
-            container.classList.remove('has-insights');
-            return;
-        }
 
         const insights = [];
 
@@ -899,7 +523,6 @@ class SwimTracker {
                 }
 
                 const standardColumn = `${targetStandard.toLowerCase()}_standard`;
-                const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
 
                 try {
                     const { data: standards } = await this.supabase
@@ -907,7 +530,7 @@ class SwimTracker {
                         .select(standardColumn)
                         .eq('event_name', baseEvent)
                         .eq('age_group', ageGroup)
-                        .eq('gender', genderForDB)
+                        .eq('gender', this.currentSwimmer.gender || 'M')
                         .limit(1);
 
                     if (standards && standards.length > 0 && standards[0][standardColumn]) {
@@ -1145,7 +768,6 @@ class SwimTracker {
 
                     // Determine column name for target standard
                     const standardColumn = `${targetStandard.toLowerCase()}_standard`;
-                    const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
 
                     // Query time standards table for target time
                     const { data: standards, error } = await this.supabase
@@ -1153,7 +775,7 @@ class SwimTracker {
                         .select(`${standardColumn}`)
                         .eq('event_name', baseEvent)
                         .eq('age_group', ageGroup)
-                        .eq('gender', genderForDB)
+                        .eq('gender', this.currentSwimmer.gender || 'M')
                         .limit(1);
 
                     if (!error && standards && standards.length > 0 && standards[0][standardColumn]) {
@@ -1356,14 +978,12 @@ class SwimTracker {
                     }
 
                     const standardColumn = `${targetStandard.toLowerCase()}_standard`;
-                    const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
-
                     const { data: standards } = await this.supabase
                         .from('time_standards')
                         .select(standardColumn)
                         .eq('event_name', baseEvent)
                         .eq('age_group', ageGroup)
-                        .eq('gender', genderForDB)
+                        .eq('gender', this.currentSwimmer.gender || 'M')
                         .limit(1);
 
                     if (standards && standards.length > 0 && standards[0][standardColumn]) {
@@ -1488,8 +1108,7 @@ class SwimTracker {
                         <div>Current</div>
                         <div>Target</div>
                         <div>${expectedHeaderText}</div>
-                        <div>Confidence</div>
-                        <div>Strategy</div>
+                        <div>Strategy & Justification</div>
                     </div>
             `;
 
@@ -1504,43 +1123,6 @@ class SwimTracker {
                 const expectedTime = rec.expectedImprovement > 0
                     ? this.formatTime(rec.currentTime - rec.expectedImprovement)
                     : '--';
-
-                // Check if ready now (expected time already meets target)
-                const isReadyNow = rec.expectedImprovement > 0 && (rec.currentTime - rec.expectedImprovement) <= rec.targetTime;
-
-                // Calculate confidence score based on consistency
-                const eventHistory = results.filter(r => r.event_name === rec.event);
-                let confidenceScore = 0;
-                let confidenceClass = 'low';
-                if (eventHistory.length >= 5 && rec.improvementPerMonth > 0.05) {
-                    confidenceScore = 90;
-                    confidenceClass = 'high';
-                } else if (eventHistory.length >= 3 && rec.improvementPerMonth > 0.02) {
-                    confidenceScore = 70;
-                    confidenceClass = 'medium';
-                } else if (eventHistory.length >= 2) {
-                    confidenceScore = 50;
-                    confidenceClass = 'medium';
-                } else {
-                    confidenceScore = 30;
-                    confidenceClass = 'low';
-                }
-
-                // Simplify justification to key points only
-                let simplifiedJustification = '';
-                if (isReadyNow) {
-                    simplifiedJustification = `✅ Ready now • ${rec.gapPercent.toFixed(1)}% gap`;
-                } else if (rec.gapPercent < 2) {
-                    simplifiedJustification = `Very close • ${rec.gapPercent.toFixed(1)}% gap`;
-                } else if (rec.gapPercent < 5) {
-                    simplifiedJustification = `Close to ${rec.targetStandard} • ${rec.gapPercent.toFixed(1)}% gap`;
-                } else {
-                    simplifiedJustification = `${rec.gapPercent.toFixed(1)}% gap to ${rec.targetStandard}`;
-                }
-
-                if (rec.daysSinceLastSwim > 90) {
-                    simplifiedJustification += ` • Not tested in ${Math.floor(rec.daysSinceLastSwim / 30)}mo`;
-                }
 
                 // Calculate projected target date based on improvement rate
                 let targetDateText = '';
@@ -1558,11 +1140,11 @@ class SwimTracker {
                 }
 
                 html += `
-                    <div class="strategy-row priority-${priorityClass}" data-priority="${priorityClass}">
+                    <div class="strategy-row priority-${priorityClass}">
                         <div class="strategy-priority">
                             <span class="priority-badge ${priorityClass}">${priorityIcon} ${rec.priority}</span>
                         </div>
-                        <div class="strategy-event">${rec.event}${isReadyNow ? '<span class="ready-indicator">🎯 Ready</span>' : ''}</div>
+                        <div class="strategy-event">${rec.event}</div>
                         <div class="strategy-current">
                             <div class="time-with-meta">
                                 <div class="time-main">
@@ -1588,8 +1170,7 @@ class SwimTracker {
                             </div>
                         </div>
                         <div class="strategy-expected">${expectedTime}</div>
-                        <div class="strategy-confidence confidence-${confidenceClass}">${confidenceScore}%</div>
-                        <div class="strategy-justification">${simplifiedJustification}</div>
+                        <div class="strategy-justification">${rec.justification}</div>
                     </div>
                 `;
             });
@@ -1597,369 +1178,8 @@ class SwimTracker {
             html += '</div>';
             container.innerHTML = html;
         } else {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">🎯</div>
-                    <div class="empty-state-title">No Meet Strategy Available Yet</div>
-                    <div class="empty-state-description">
-                        Complete a few competitive swims to unlock AI-driven recommendations
-                        for which events to focus on in upcoming meets.
-                    </div>
-                </div>
-            `;
+            container.innerHTML = '<p class="no-strategy">No strategic recommendations available. Keep training!</p>';
         }
-    }
-
-    async renderPracticeStrategy() {
-        const container = document.getElementById('practiceStrategy');
-        if (!container) return;
-
-        // Get insights data with gaps and timelines
-        const insights = this.cachedInsights;
-        if (!insights || insights.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">🏊</div>
-                    <div class="empty-state-title">No Training Plan Available Yet</div>
-                    <div class="empty-state-description">
-                        Once you complete some competitive swims and we detect improvement patterns,
-                        you'll see personalized training plans with Olympic-level coaching guidance.
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        // Group insights by stroke
-        const strokeGroups = {
-            'FR': { name: 'Freestyle', icon: '🏊', events: [] },
-            'BK': { name: 'Backstroke', icon: '🏊‍♂️', events: [] },
-            'BR': { name: 'Breaststroke', icon: '🐸', events: [] },
-            'FL': { name: 'Butterfly', icon: '🦋', events: [] },
-            'IM': { name: 'Individual Medley', icon: '⚡', events: [] }
-        };
-
-        // Categorize events by stroke
-        insights.forEach(insight => {
-            const event = insight.event;
-            for (const [strokeKey, strokeData] of Object.entries(strokeGroups)) {
-                if (event.includes(strokeKey)) {
-                    strokeGroups[strokeKey].events.push(insight);
-                    break;
-                }
-            }
-        });
-
-        // Generate HTML for each stroke with events
-        let html = '';
-        for (const [strokeKey, strokeData] of Object.entries(strokeGroups)) {
-            if (strokeData.events.length === 0) continue;
-
-            // Sort events by timeline (most urgent first)
-            strokeData.events.sort((a, b) => a.monthsToTarget - b.monthsToTarget);
-
-            html += `
-                <div class="stroke-practice">
-                    <div class="stroke-header">
-                        <span class="stroke-icon">${strokeData.icon}</span>
-                        <span class="stroke-title">${strokeData.name} Training Program</span>
-                    </div>
-                    <div class="stroke-events">
-            `;
-
-            strokeData.events.forEach((insight, eventIndex) => {
-                const gap = insight.gap;
-                const months = Math.ceil(insight.monthsToTarget);
-                const targetDate = new Date(insight.lastEventDate);
-                targetDate.setMonth(targetDate.getMonth() + months);
-                const targetMonth = targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-
-                // Determine distance and urgency
-                const distance = parseInt(insight.event.match(/^\d+/)?.[0] || '0');
-                const urgency = months <= 2 ? 'critical' : months <= 4 ? 'high' : 'moderate';
-                const urgencyLabel = months <= 2 ? 'URGENT' : months <= 4 ? 'HIGH PRIORITY' : 'MODERATE';
-
-                // Get detailed training plan
-                const trainingPlan = this.getDetailedTrainingPlan(strokeKey, distance, gap, months, insight);
-
-                const eventId = `event-${strokeKey}-${eventIndex}`;
-
-                html += `
-                    <div class="practice-event">
-                        <div class="practice-event-header collapsible" data-target="${eventId}">
-                            <div class="practice-event-info">
-                                <div class="practice-event-name">${insight.event}</div>
-                                <div class="practice-goal">
-                                    <div class="practice-goal-text">Drop ${this.formatTime(gap)} to achieve ${insight.targetStandard} Standard</div>
-                                    <div class="practice-timeline">⏱️ Target Date: ${targetMonth} • ${months} month${months > 1 ? 's' : ''} to prepare</div>
-                                </div>
-                            </div>
-                            <div class="event-header-actions">
-                                <span class="urgency-badge urgency-${urgency}">${urgencyLabel}</span>
-                                <span class="collapse-icon">▼</span>
-                            </div>
-                        </div>
-
-                        <div class="practice-event-content collapsed" id="${eventId}">
-                            ${trainingPlan}
-                        </div>
-                    </div>
-                `;
-            });
-
-            html += `
-                    </div>
-                </div>
-            `;
-        }
-
-        if (html) {
-            container.innerHTML = html;
-
-            // Add click handlers for collapsible sections
-            this.setupCollapsibleHandlers();
-        } else {
-            container.innerHTML = '<p class="no-practice">Complete some events first to get personalized practice recommendations!</p>';
-        }
-    }
-
-    setupCollapsibleHandlers() {
-        // Handle both phase headers and event headers
-        const collapsibleHeaders = document.querySelectorAll('.collapsible');
-        collapsibleHeaders.forEach(header => {
-            header.addEventListener('click', (e) => {
-                const targetId = header.getAttribute('data-target');
-                const content = document.getElementById(targetId);
-                const icon = header.querySelector('.collapse-icon');
-
-                if (content && icon) {
-                    content.classList.toggle('collapsed');
-                    icon.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
-                }
-            });
-        });
-    }
-
-    // Bob Bowman-inspired detailed training plan generator
-    getDetailedTrainingPlan(stroke, distance, gapSeconds, months, insight) {
-        const phases = [];
-
-        // Determine training phases based on timeline (periodization)
-        if (months >= 4) {
-            // Base Phase (40% of time)
-            phases.push(this.getBasePhase(stroke, distance, gapSeconds));
-            // Build Phase (30% of time)
-            phases.push(this.getBuildPhase(stroke, distance, gapSeconds));
-            // Taper Phase (30% of time)
-            phases.push(this.getTaperPhase(stroke, distance, gapSeconds));
-        } else if (months >= 2) {
-            // Condensed: Build + Taper
-            phases.push(this.getBuildPhase(stroke, distance, gapSeconds));
-            phases.push(this.getTaperPhase(stroke, distance, gapSeconds));
-        } else {
-            // Urgent: Race-specific only
-            phases.push(this.getTaperPhase(stroke, distance, gapSeconds));
-        }
-
-        let html = '<div class="practice-phases">';
-        phases.forEach((phase, phaseIndex) => {
-            const phaseId = `phase-${stroke}-${distance}-${phaseIndex}`;
-            html += `
-                <div class="training-phase">
-                    <div class="phase-header collapsible" data-target="${phaseId}">
-                        <div class="phase-info">
-                            <span class="phase-icon">${phase.icon}</span>
-                            <span class="phase-title">${phase.title}</span>
-                            <span class="phase-duration">${phase.duration}</span>
-                        </div>
-                        <span class="collapse-icon">▼</span>
-                    </div>
-                    <div class="phase-content collapsed" id="${phaseId}">
-                        <div class="phase-description">${phase.description}</div>
-                        <div class="drill-sets">
-                            ${phase.drills.map(drill => `
-                                <div class="drill-set">
-                                    <span class="drill-bullet">▸</span>
-                                    <span class="drill-text">${drill}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
-
-        return html;
-    }
-
-    getBasePhase(stroke, distance, gapSeconds) {
-        const drills = [];
-        const isSprintEvent = distance <= 50;
-        const isMidDistance = distance > 50 && distance <= 100;
-
-        // Common base training
-        drills.push('Aerobic base: 3000-4000 yards/meters at 70-75% effort, focusing on technique');
-        drills.push('Threshold sets: 6-8 x 200 @ 85% with 20-30sec rest for lactate threshold');
-
-        // Distance-specific base work
-        if (isSprintEvent) {
-            drills.push('Power development: 16 x 25 sprint @ max effort, 45sec rest - build explosive speed');
-            drills.push('Resistance training: Parachute or band work, 8 x 50 building to race pace');
-        } else if (isMidDistance) {
-            drills.push('Pace work: 10 x 100 @ target race pace +3sec, 15sec rest - build speed endurance');
-            drills.push('Descending ladder: 400-300-200-100-100-200-300-400 @ controlled pace');
-        } else {
-            drills.push('Endurance building: 20 x 100 @ comfortable pace, 10sec rest - aerobic capacity');
-            drills.push('Negative split training: 5 x 400, second half faster than first');
-        }
-
-        // Stroke-specific technique
-        drills.push(...this.getStrokeTechniqueDrills(stroke, distance, 'base'));
-
-        return {
-            icon: '🏗️',
-            title: 'Phase 1: Base Building',
-            duration: `Weeks 1-${Math.ceil(gapSeconds * 0.4)}`,
-            description: 'Building aerobic foundation and perfecting stroke technique. Focus on volume and consistency over intensity. This phase develops the endurance base needed for race-specific training.',
-            drills: drills
-        };
-    }
-
-    getBuildPhase(stroke, distance, gapSeconds) {
-        const drills = [];
-        const isSprintEvent = distance <= 50;
-        const isMidDistance = distance > 50 && distance <= 100;
-
-        // Intensity progression
-        drills.push('Race pace sets: 6-8 x ' + (distance === 50 ? '50' : distance === 100 ? '100' : '200') + ' @ goal race pace, adequate rest');
-
-        if (isSprintEvent) {
-            drills.push('Power + Speed: 10 x 25 ALL OUT from blocks, full recovery - max velocity training');
-            drills.push('Start practice: 15 explosive starts, focus on reaction time (goal: <0.65sec)');
-            drills.push('Turn acceleration: 8 x 25, 15m underwater, explosive breakout to surface');
-        } else if (isMidDistance) {
-            drills.push('Broken swims: ' + distance + ' as 4 x ' + (distance/4) + ' @ race pace -1sec, 10sec rest between');
-            drills.push('Speed work: 12 x 50 @ 90-95% effort, 30sec rest - developing top-end speed');
-            drills.push('Pace discipline: 400 IM pace work, maintaining target splits throughout');
-        } else {
-            drills.push('Threshold intervals: 5 x 300 @ 90% effort, 30sec rest - lactate tolerance');
-            drills.push('Race simulation: Full ' + distance + ' time trial, analyze splits and pacing');
-        }
-
-        // Advanced technique under fatigue
-        drills.push(...this.getStrokeTechniqueDrills(stroke, distance, 'build'));
-        drills.push('Mental training: Visualization of perfect race, practice maintaining form when tired');
-
-        return {
-            icon: '💪',
-            title: 'Phase 2: Specific Preparation',
-            duration: 'Mid-cycle weeks',
-            description: 'Race-specific training at target pace and faster. Building speed, power, and race-specific endurance. Maintaining technique under increasing fatigue.',
-            drills: drills
-        };
-    }
-
-    getTaperPhase(stroke, distance, gapSeconds) {
-        const drills = [];
-        const isSprintEvent = distance <= 50;
-
-        // Taper and sharpening
-        drills.push('Sharpening sprints: 4-6 x ' + (distance === 50 ? '25' : '50') + ' @ 95-100%, long rest - maintain speed, reduce volume');
-        drills.push('Race pace rehearsal: 2 x ' + distance + ' @ race pace, full recovery - race simulation');
-
-        if (isSprintEvent) {
-            drills.push('Start explosiveness: 6-8 starts, focus on quick reaction and powerful drive phase');
-            drills.push('Maximum velocity: 6 x 15m from dive, focus on stroke rate and DPS (distance per stroke)');
-        } else {
-            drills.push('Pace feel work: 4 x ' + Math.floor(distance/2) + ' @ exact race pace, practice split execution');
-        }
-
-        drills.push('Underwaters: 10 x underwater kicks (5-7 dolphin kicks), explosive breakouts');
-        drills.push('Race strategy: Practice pacing, breathing patterns, and finish technique');
-        drills.push(...this.getStrokeTechniqueDrills(stroke, distance, 'taper'));
-        drills.push('Competition mindset: Mental rehearsal, pre-race routine practice, confidence building');
-
-        return {
-            icon: '🎯',
-            title: 'Phase 3: Peak & Competition',
-            duration: 'Final 2-3 weeks',
-            description: 'Reduce volume, maintain intensity. Fine-tune race execution, starts, turns, and finish. Peak fitness and confidence for competition day.',
-            drills: drills
-        };
-    }
-
-    getStrokeTechniqueDrills(stroke, distance, phase) {
-        const drills = [];
-
-        switch (stroke) {
-            case 'FR':
-                if (phase === 'base') {
-                    drills.push('Freestyle catch drill: 8 x 50 focus on high elbow catch, fingertip drag');
-                    drills.push('Single arm freestyle: 4 x 75 (25 right, 25 left, 25 full stroke) for stroke symmetry');
-                } else if (phase === 'build') {
-                    drills.push('6-kick switch: 200s with 6 kicks per side, perfect body rotation and streamline');
-                    drills.push('Bilateral breathing ladder: 200 (breathe every 3), 200 (every 5), 200 (every 7)');
-                } else {
-                    drills.push('Fast hands freestyle: 4 x 50 high turnover rate while maintaining distance per stroke');
-                    drills.push('Sprint breathing pattern: Practice race breathing rhythm at race pace');
-                }
-                break;
-
-            case 'BK':
-                if (phase === 'base') {
-                    drills.push('Backstroke streamline kicks: 8 x 50 underwater emphasis, 5-7 dolphins off each wall');
-                    drills.push('Double arm backstroke: Focus on synchronous arm movement and body position');
-                } else if (phase === 'build') {
-                    drills.push('Backstroke spin drill: 200s focusing on high stroke rate with long axis rotation');
-                    drills.push('Breakout timing: 10 x 15m underwater to breakout, optimize transition to stroke');
-                } else {
-                    drills.push('Backstroke turns: 8-10 race-pace turns, fast flip, perfect streamline, explosive breakout');
-                    drills.push('Head position drill: Maintain perfect head alignment at race pace for reduced drag');
-                }
-                break;
-
-            case 'BR':
-                if (phase === 'base') {
-                    drills.push('Breaststroke pullouts: 8 x one pullout + 3 strokes, perfect timing and streamline');
-                    drills.push('2 kicks 1 pull: Emphasize powerful kick, patience in timing');
-                } else if (phase === 'build') {
-                    drills.push('Breaststroke tempo: 200s building stroke rate while maintaining length');
-                    drills.push('Power kicks: 8 x 25 kick-only, maximum propulsion from whip kick');
-                } else {
-                    drills.push('Race-pace pullouts: Perfect underwater pullout timing at race intensity');
-                    drills.push('Sprint breaststroke: 6 x 25 max effort, maintain technique at high rate');
-                }
-                break;
-
-            case 'FL':
-                if (phase === 'base') {
-                    drills.push('Butterfly body dolphin: 8 x 50 focus on core-driven undulation, no arms');
-                    drills.push('Single arm butterfly: 4 x 75 (25 right, 25 left, 25 full) for symmetrical power');
-                } else if (phase === 'build') {
-                    drills.push('3-3-3 butterfly: 3 strokes underwater, 3 one-arm, 3 full stroke - seamless transitions');
-                    drills.push('Butterfly kick timing: Perfect 2-beat kick per stroke cycle at race pace');
-                } else {
-                    drills.push('Fast fly: 4-6 x 25-50 at race pace, focus on maintaining technique when fatigued');
-                    drills.push('Finish strong: Practice last 15m at max effort with perfect stroke mechanics');
-                }
-                break;
-
-            case 'IM':
-                if (phase === 'base') {
-                    drills.push('IM order transitions: 8 x 100 IM, focus on smooth stroke-to-stroke transitions');
-                    drills.push('Stroke balance: Equal time on all four strokes, identify and improve weakest stroke');
-                } else if (phase === 'build') {
-                    drills.push('IM pace work: Broken ' + (distance === 200 ? '200' : '400') + ' IM with splits analysis');
-                    drills.push('Fly endurance: Extra fly sets to build stamina for strong opening');
-                } else {
-                    drills.push('IM turns: Perfect transitions at race pace, especially fly-to-back and breast-to-free');
-                    drills.push('Race simulation: Full IM at race pace, execute race plan');
-                }
-                break;
-        }
-
-        return drills;
     }
 
     renderTimelineChart() {
