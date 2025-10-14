@@ -1344,7 +1344,16 @@ class SwimTracker {
             html += '</div>';
             container.innerHTML = html;
         } else {
-            container.innerHTML = '<p class="no-strategy">No strategic recommendations available. Keep training!</p>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎯</div>
+                    <div class="empty-state-title">No Meet Strategy Available Yet</div>
+                    <div class="empty-state-description">
+                        Complete a few competitive swims to unlock AI-driven recommendations
+                        for which events to focus on in upcoming meets.
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -1355,7 +1364,16 @@ class SwimTracker {
         // Get insights data with gaps and timelines
         const insights = this.cachedInsights;
         if (!insights || insights.length === 0) {
-            container.innerHTML = '<p class="no-practice">Complete some events first to get personalized practice recommendations!</p>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🏊</div>
+                    <div class="empty-state-title">No Training Plan Available Yet</div>
+                    <div class="empty-state-description">
+                        Once you complete some competitive swims and we detect improvement patterns,
+                        you'll see personalized training plans with Olympic-level coaching guidance.
+                    </div>
+                </div>
+            `;
             return;
         }
 

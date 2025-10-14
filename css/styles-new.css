@@ -144,6 +144,13 @@ body {
 .control-btn:hover {
     background: var(--bg-secondary);
     border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 /* Hero Section */
@@ -255,7 +262,9 @@ section {
 .section-content {
     max-height: 5000px;
     overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.2s ease, margin-top 0.3s ease;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s ease,
+                margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 1;
     margin-top: var(--space-lg);
 }
@@ -265,6 +274,35 @@ section {
     opacity: 0;
     margin-top: 0;
 }
+
+/* Smooth reveal animation for newly loaded content */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stat-card,
+.collapsible-section {
+    animation: fadeInUp 0.5s ease backwards;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.1s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.2s; }
+
+.collapsible-section:nth-child(1) { animation-delay: 0.25s; }
+.collapsible-section:nth-child(2) { animation-delay: 0.3s; }
+.collapsible-section:nth-child(3) { animation-delay: 0.35s; }
+.collapsible-section:nth-child(4) { animation-delay: 0.4s; }
+.collapsible-section:nth-child(5) { animation-delay: 0.45s; }
+.collapsible-section:nth-child(6) { animation-delay: 0.5s; }
 
 .chart-filters {
     display: flex;
@@ -1068,6 +1106,88 @@ section {
     to { transform: rotate(360deg); }
 }
 
+/* Skeleton Loading */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--bg-secondary) 0%,
+        #e8e8ed 50%,
+        var(--bg-secondary) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 8px;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-stat {
+    height: 80px;
+    width: 100%;
+}
+
+.skeleton-chart {
+    height: 600px;
+    width: 100%;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: var(--space-2xl) var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    opacity: 0.3;
+}
+
+.empty-state-title {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.empty-state-description {
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    max-width: 400px;
+    line-height: 1.6;
+}
+
+.empty-state-action {
+    margin-top: var(--space-sm);
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.empty-state-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3);
+}
+
+.empty-state-action:active {
+    transform: translateY(0);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .header-content {
@@ -1182,12 +1302,34 @@ section {
     }
 }
 
+/* Accessibility - Better Focus States */
+*:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+button:focus-visible,
+select:focus-visible,
+.collapsible:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
-    * {
+    *,
+    *::before,
+    *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .stat-card,
+    .collapsible-section {
+        animation: none !important;
     }
 }
 
