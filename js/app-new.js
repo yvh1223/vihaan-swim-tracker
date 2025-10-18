@@ -171,6 +171,7 @@ class SwimTracker {
             });
         }
 
+
         // Priority filter event listeners
         const priorityButtons = document.querySelectorAll('.priority-filter-btn');
         priorityButtons.forEach(btn => {
@@ -459,6 +460,48 @@ class SwimTracker {
         const projectionMonths = 3; // Project 3 months ahead
         const targetStandardsInfo = {}; // Store target info for reference lines
 
+        // Get current age group for time standards
+        const currentAge = this.currentSwimmer.current_age;
+        let currentAgeGroup = '10 & under';
+        if (currentAge >= 13) {
+            currentAgeGroup = '13-14';
+        } else if (currentAge >= 11) {
+            currentAgeGroup = '11-12';
+        }
+        const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
+
+        // Fetch ALL time standards for ALL age groups in ONE query
+        // Note: We need to match the course type from the filter
+        const courseType = this.filters.course === 'all' ? 'SCY' : this.filters.course;
+
+        const allTimeStandards = {};
+        try {
+            const { data: standards, error } = await this.supabase
+                .from('time_standards')
+                .select('age_group, event_name, b_standard, bb_standard, a_standard, aa_standard, aaa_standard, aaaa_standard')
+                .eq('gender', genderForDB)
+                .eq('course_type', courseType);
+
+            if (!error && standards) {
+                standards.forEach(std => {
+                    // Create nested structure: allTimeStandards[ageGroup][eventName]
+                    if (!allTimeStandards[std.age_group]) {
+                        allTimeStandards[std.age_group] = {};
+                    }
+                    allTimeStandards[std.age_group][std.event_name] = {
+                        b: parseFloat(std.b_standard),
+                        bb: parseFloat(std.bb_standard),
+                        a: parseFloat(std.a_standard),
+                        aa: parseFloat(std.aa_standard),
+                        aaa: parseFloat(std.aaa_standard),
+                        aaaa: parseFloat(std.aaaa_standard)
+                    };
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching time standards:', error);
+        }
+
         // First pass: create datasets and gather target standard info
         for (const [event, data] of Object.entries(eventGroups)) {
             const index = Object.keys(eventGroups).indexOf(event);
@@ -535,22 +578,11 @@ class SwimTracker {
                         }
 
                         if (targetStandard) {
-                            // Fetch target time from database
+                            // Get target time from pre-fetched standards
                             const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
-                            let ageGroup = '10 & under';
-                            if (this.currentSwimmer.current_age >= 13) {
-                                ageGroup = '13-14';
-                            } else if (this.currentSwimmer.current_age >= 11) {
-                                ageGroup = '11-12';
-                            }
-
-                            const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
-                            const targetTime = await this.getTimeStandard(
-                                baseEvent,
-                                ageGroup,
-                                genderForDB,
-                                `${targetStandard.toLowerCase()}_standard`
-                            );
+                            const standards = allTimeStandards[currentAgeGroup] ? allTimeStandards[currentAgeGroup][baseEvent] : null;
+                            const standardKey = targetStandard.toLowerCase();
+                            const targetTime = standards ? standards[standardKey] : null;
 
                             if (targetTime && targetTime < currentTime) {
                                 // Find intersection point between projection and target
@@ -583,6 +615,40 @@ class SwimTracker {
             }
         }
 
+        // Store time standards for each event to draw reference markers
+        const timeStandardMarkers = {};
+        for (const [event, data] of Object.entries(eventGroups)) {
+            const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
+            const standards = allTimeStandards[currentAgeGroup] ? allTimeStandards[currentAgeGroup][baseEvent] : null;
+
+            if (standards) {
+                // Determine which standards to show based on current best time
+                const currentBest = Math.min(...data.map(d => d.y));
+                const markersToShow = [];
+
+                // Define standard hierarchy (worst to best)
+                const standardLevels = [
+                    { name: 'BB', value: standards.bb },
+                    { name: 'A', value: standards.a },
+                    { name: 'AA', value: standards.aa },
+                    { name: 'AAA', value: standards.aaa },
+                    { name: 'AAAA', value: standards.aaaa }
+                ];
+
+                // Find the next unachieved standard
+                let foundNext = false;
+                for (const level of standardLevels) {
+                    if (level.value && currentBest > level.value && !foundNext) {
+                        markersToShow.push({ label: level.name, time: level.value });
+                        foundNext = true;
+                        break;
+                    }
+                }
+
+                timeStandardMarkers[event] = markersToShow;
+            }
+        }
+
         // Capture this context for use in plugins
         const self = this;
 
@@ -598,22 +664,85 @@ class SwimTracker {
                     const meta = chart.getDatasetMeta(datasetIndex);
                     if (!meta.data.length) return;
 
-                    // Get the last point in the line
-                    const lastPoint = meta.data[meta.data.length - 1];
-                    const x = lastPoint.x;
-                    const y = lastPoint.y;
+                    // Get the first point in the line (beginning of the line)
+                    const firstPoint = meta.data[0];
+                    const x = firstPoint.x;
+                    const y = firstPoint.y;
 
                     // Draw label
                     ctx.save();
                     ctx.fillStyle = dataset.borderColor;
                     ctx.font = 'bold 11px Inter';
-                    ctx.textAlign = 'left';
+                    ctx.textAlign = 'right';
                     ctx.textBaseline = 'middle';
 
-                    // Add padding to the right of the point
+                    // Add padding to the left of the point
                     const label = dataset.label;
-                    ctx.fillText(label, x + 8, y);
+                    ctx.fillText(label, x - 8, y);
                     ctx.restore();
+                });
+            }
+        };
+
+        // Custom plugin to draw time standard markers (circles with labels)
+        const timeStandardMarkersPlugin = {
+            id: 'timeStandardMarkers',
+            afterDatasetsDraw: (chart) => {
+                const ctx = chart.ctx;
+                const yAxis = chart.scales.y;
+
+                // Draw markers for each dataset (event)
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    // Skip projection lines
+                    if (dataset.label.includes('(projected)')) return;
+
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    if (!meta.data.length) return;
+
+                    // Get the last point in the line
+                    const lastPoint = meta.data[meta.data.length - 1];
+                    const xBase = lastPoint.x;
+
+                    // Get event name and find corresponding markers
+                    const eventName = dataset.label;
+                    const markers = timeStandardMarkers[eventName];
+
+                    if (markers && markers.length > 0) {
+                        // Use the event line's color for the markers
+                        const eventColor = dataset.borderColor;
+
+                        markers.forEach((marker, index) => {
+                            // Position markers vertically at the standard time
+                            const yPixel = yAxis.getPixelForValue(marker.time);
+                            // Offset each marker horizontally to avoid overlap
+                            const xPixel = xBase + 35 + (index * 50);
+
+                            // Draw circle using the event's stroke color
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(xPixel, yPixel, 10, 0, 2 * Math.PI);
+                            ctx.fillStyle = eventColor;
+                            ctx.fill();
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+
+                            // Draw label inside circle
+                            ctx.fillStyle = '#fff';
+                            ctx.font = 'bold 9px Inter';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(marker.label, xPixel, yPixel);
+
+                            // Draw time value below circle using the event's stroke color
+                            ctx.fillStyle = eventColor;
+                            ctx.font = '9px Inter';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(self.formatTime(marker.time), xPixel, yPixel + 16);
+
+                            ctx.restore();
+                        });
+                    }
                 });
             }
         };
@@ -622,9 +751,6 @@ class SwimTracker {
         // Calculate time standards correctly based on swimmer's age at each event
         const standardAchievements = {};
         const standardOrder = { 'B': 1, 'BB': 2, 'A': 3, 'AA': 4, 'AAA': 5, 'AAAA': 6 };
-
-        // Map gender to database format (Boys/Girls)
-        const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
 
         // Pre-calculate all standards asynchronously
         for (const [event, data] of Object.entries(eventGroups)) {
@@ -659,18 +785,17 @@ class SwimTracker {
                 const timeSeconds = result.time_seconds;
 
                 // Check from best to worst: AAAA -> AAA -> AA -> A -> BB -> B
-                const standardsToCheck = ['aaaa', 'aaa', 'aa', 'a', 'bb', 'b'];
-                for (const stdLevel of standardsToCheck) {
-                    const targetTime = await this.getTimeStandard(
-                        baseEvent,
-                        ageGroup,
-                        genderForDB,
-                        `${stdLevel}_standard`
-                    );
+                const standards = allTimeStandards[ageGroup] ? allTimeStandards[ageGroup][baseEvent] : null;
 
-                    if (targetTime && timeSeconds <= targetTime) {
-                        calculatedStandard = stdLevel.toUpperCase();
-                        break;
+                if (standards) {
+                    const standardsToCheck = ['aaaa', 'aaa', 'aa', 'a', 'bb', 'b'];
+                    for (const stdLevel of standardsToCheck) {
+                        const targetTime = standards[stdLevel];
+
+                        if (targetTime && timeSeconds <= targetTime) {
+                            calculatedStandard = stdLevel.toUpperCase();
+                            break;
+                        }
                     }
                 }
 
@@ -814,7 +939,7 @@ class SwimTracker {
                     }
                 }
             },
-            plugins: [lineLabelsPlugin, standardLabelsPlugin]
+            plugins: [lineLabelsPlugin, timeStandardMarkersPlugin, standardLabelsPlugin]
         });
 
         // Populate exclude filter dropdown with available events
@@ -2056,7 +2181,38 @@ class SwimTracker {
         });
     }
 
-    // Utility functions
+    // Helper function to group data by quarters
+    groupDataByQuarter(results) {
+        const quarterData = {};
+
+        results.forEach(result => {
+            const date = new Date(result.event_date);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const quarter = Math.floor(month / 3) + 1;
+            const quarterKey = `Q${quarter} ${year}`;
+
+            if (!quarterData[result.event_name]) {
+                quarterData[result.event_name] = {};
+            }
+
+            if (!quarterData[result.event_name][quarterKey]) {
+                quarterData[result.event_name][quarterKey] = {
+                    times: [],
+                    bestTime: Infinity,
+                    date: new Date(year, (quarter - 1) * 3, 1)
+                };
+            }
+
+            quarterData[result.event_name][quarterKey].times.push(result.time_seconds);
+            if (result.time_seconds < quarterData[result.event_name][quarterKey].bestTime) {
+                quarterData[result.event_name][quarterKey].bestTime = result.time_seconds;
+            }
+        });
+
+        return quarterData;
+    }
+
     getColor(index, alpha = 1) {
         const colors = [
             '0, 122, 255',   // Blue

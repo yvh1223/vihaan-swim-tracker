@@ -1667,3 +1667,26 @@ select:focus-visible,
         page-break-inside: avoid;
     }
 }
+
+/* Age Group Legend Styling */
+.age-group-legend {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+}
+
+.age-group-legend .legend-info {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.age-group-legend .legend-info p {
+    margin: var(--space-xs) 0;
+}
+
+.age-group-legend .legend-info strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
