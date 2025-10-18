@@ -53,3 +53,6 @@ node_modules/
 # Claude AI files - do not commit
 CLAUDE.md
 *.claude.*
+
+# Playwright MCP
+.playwright-mcp
