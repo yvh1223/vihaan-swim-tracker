@@ -95,21 +95,15 @@
                     <div class="chart-container">
                         <canvas id="progressChart"></canvas>
                     </div>
-                    <div id="progressInsights" class="progress-insights">
-                        <h4 class="insights-title">Projections</h4>
-                        <div id="progressInsightsContent">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
                 </div>
             </section>
 
 
-            <!-- Upcoming Meets Strategy -->
+            <!-- Focus Events - Merged Strategy -->
             <section class="meets-section collapsible-section">
                 <div class="section-header collapsible" data-target="meetSection">
                     <div class="section-header-content">
-                        <h3 class="section-title">Meet Strategy - What to Swim</h3>
+                        <h3 class="section-title">Focus Events</h3>
                         <div class="priority-filters">
                             <button class="priority-filter-btn active" data-priority="all" onclick="event.stopPropagation()">All</button>
                             <button class="priority-filter-btn" data-priority="high" onclick="event.stopPropagation()">High Priority</button>
@@ -117,9 +111,9 @@
                             <button class="priority-filter-btn" data-priority="low" onclick="event.stopPropagation()">Low Priority</button>
                         </div>
                     </div>
-                    <span class="collapse-icon">▼</span>
+                    <span class="collapse-icon">▲</span>
                 </div>
-                <div class="section-content collapsed" id="meetSection">
+                <div class="section-content" id="meetSection">
                     <div id="meetStrategy" class="meet-strategy">
                         <!-- Populated by JS -->
                     </div>
