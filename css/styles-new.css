@@ -712,10 +712,43 @@ section {
 }
 
 .strategy-justification {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.strategy-main {
     font-size: var(--font-size-sm);
     line-height: 1.5;
     color: var(--text-primary);
     font-weight: 400;
+}
+
+.strategy-meta {
+    display: flex;
+    gap: 8px;
+}
+
+.confidence-score {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.confidence-score.confidence-high {
+    color: #0d6b38;
+    background: rgba(52, 199, 89, 0.15);
+}
+
+.confidence-score.confidence-medium {
+    color: #cc6600;
+    background: rgba(255, 149, 0, 0.15);
+}
+
+.confidence-score.confidence-low {
+    color: #666;
+    background: rgba(142, 142, 147, 0.15);
 }
 
 .ready-indicator {

@@ -1608,7 +1608,7 @@ class SwimTracker {
                         <div>Current</div>
                         <div>Target</div>
                         <div>${expectedHeaderText}</div>
-                        <div>Strategy</div>
+                        <div>Strategy (Confidence)</div>
                     </div>
             `;
 
@@ -1661,9 +1661,6 @@ class SwimTracker {
                     simplifiedJustification += ` • Not tested in ${Math.floor(rec.daysSinceLastSwim / 30)}mo`;
                 }
 
-                // Add confidence to strategy text
-                simplifiedJustification += ` (${confidenceScore}% confidence)`;
-
                 // Calculate projected target date based on improvement rate
                 let targetDateText = '';
                 let targetMonthsText = '';
@@ -1707,7 +1704,12 @@ class SwimTracker {
                             </div>
                         </div>
                         <div class="strategy-expected">${expectedTime}</div>
-                        <div class="strategy-justification">${simplifiedJustification}</div>
+                        <div class="strategy-justification">
+                            <div class="strategy-main">${simplifiedJustification}</div>
+                            <div class="strategy-meta">
+                                <span class="confidence-score confidence-${confidenceClass}">${confidenceScore}%</span>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
