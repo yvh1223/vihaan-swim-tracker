@@ -492,6 +492,40 @@ section {
     border-color: var(--primary);
 }
 
+/* Color-coded priority filter buttons */
+.priority-filter-btn[data-priority="high"] {
+    border-color: #34c759;
+    color: #0d6b38;
+}
+
+.priority-filter-btn[data-priority="high"].active {
+    background: #34c759;
+    color: white;
+    border-color: #34c759;
+}
+
+.priority-filter-btn[data-priority="medium"] {
+    border-color: #ff9500;
+    color: #cc6600;
+}
+
+.priority-filter-btn[data-priority="medium"].active {
+    background: #ff9500;
+    color: white;
+    border-color: #ff9500;
+}
+
+.priority-filter-btn[data-priority="low"] {
+    border-color: #8e8e93;
+    color: #666;
+}
+
+.priority-filter-btn[data-priority="low"].active {
+    background: #8e8e93;
+    color: white;
+    border-color: #8e8e93;
+}
+
 /* Meet Strategy Section */
 .strategy-intro {
     background: var(--bg-secondary);
@@ -515,7 +549,7 @@ section {
 
 .strategy-header {
     display: grid;
-    grid-template-columns: 90px 1fr 1.1fr 1.1fr 0.75fr 0.6fr 2.5fr;
+    grid-template-columns: 1fr 1.1fr 1.1fr 0.75fr 0.6fr 2.5fr;
     gap: var(--space-xs);
     padding: var(--space-md) var(--space-lg);
     background: var(--bg-secondary);
@@ -528,10 +562,11 @@ section {
 
 .strategy-row {
     display: grid;
-    grid-template-columns: 90px 1fr 1.1fr 1.1fr 0.75fr 0.6fr 2.5fr;
+    grid-template-columns: 1fr 1.1fr 1.1fr 0.75fr 0.6fr 2.5fr;
     gap: var(--space-xs);
     padding: var(--space-md) var(--space-lg);
     border-top: 1px solid var(--border);
+    border-left: 4px solid transparent;
     align-items: start;
     transition: var(--transition);
 }
@@ -544,12 +579,32 @@ section {
     background: var(--bg-secondary);
 }
 
+/* Priority indicators via left border */
 .strategy-row.priority-high {
-    background: rgba(52, 199, 89, 0.05);
+    border-left-color: #34c759;
+    background: rgba(52, 199, 89, 0.03);
 }
 
 .strategy-row.priority-high:hover {
-    background: rgba(52, 199, 89, 0.1);
+    background: rgba(52, 199, 89, 0.08);
+}
+
+.strategy-row.priority-medium {
+    border-left-color: #ff9500;
+    background: rgba(255, 149, 0, 0.03);
+}
+
+.strategy-row.priority-medium:hover {
+    background: rgba(255, 149, 0, 0.08);
+}
+
+.strategy-row.priority-low {
+    border-left-color: #8e8e93;
+    background: rgba(142, 142, 147, 0.03);
+}
+
+.strategy-row.priority-low:hover {
+    background: rgba(142, 142, 147, 0.08);
 }
 
 .priority-badge {
