@@ -1602,10 +1602,6 @@ class SwimTracker {
             const expectedHeaderText = `Expected (if swum this month)`;
 
             let html = `
-                <div class="strategy-intro">
-                    <p>Strategic event selection based on current performance and improvement potential.
-                    Focus on <strong>High Priority</strong> events for maximum scoring opportunities.</p>
-                </div>
                 <div class="strategy-table">
                     <div class="strategy-header">
                         <div>Priority</div>
