@@ -1682,12 +1682,16 @@ class SwimTracker {
                     targetMonthsText = '';
                 }
 
+                // Determine priority display text
+                const priorityDisplayText = isReadyNow ? 'Ready' : rec.priority;
+                const priorityDisplayIcon = isReadyNow ? '🎯' : priorityIcon;
+
                 html += `
                     <div class="strategy-row priority-${priorityClass}" data-priority="${priorityClass}">
                         <div class="strategy-priority">
-                            <span class="priority-badge ${priorityClass}">${priorityIcon} ${rec.priority}</span>
+                            <span class="priority-badge ${priorityClass}">${priorityDisplayIcon} ${priorityDisplayText}</span>
                         </div>
-                        <div class="strategy-event">${rec.event}${isReadyNow ? '<span class="ready-indicator">🎯 Ready</span>' : ''}</div>
+                        <div class="strategy-event">${rec.event}</div>
                         <div class="strategy-current">
                             <div class="time-with-meta">
                                 <div class="time-main">
