@@ -1645,20 +1645,28 @@ class SwimTracker {
                     confidenceClass = 'low';
                 }
 
-                // Simplify justification to key points only
+                // Create meaningful, parent-friendly strategy messages
+                const gapSeconds = rec.gap;
                 let simplifiedJustification = '';
+
                 if (isReadyNow) {
-                    simplifiedJustification = `✅ Ready now • ${rec.gapPercent.toFixed(1)}% gap`;
-                } else if (rec.gapPercent < 2) {
-                    simplifiedJustification = `Very close • ${rec.gapPercent.toFixed(1)}% gap`;
-                } else if (rec.gapPercent < 5) {
-                    simplifiedJustification = `Close to ${rec.targetStandard} • ${rec.gapPercent.toFixed(1)}% gap`;
+                    simplifiedJustification = `✅ Ready to achieve ${rec.targetStandard} time in next meet`;
+                } else if (gapSeconds < 1) {
+                    simplifiedJustification = `Nearly there - less than 1 second away from ${rec.targetStandard}`;
+                } else if (gapSeconds < 2) {
+                    simplifiedJustification = `Very close - about ${gapSeconds.toFixed(1)} seconds needed for ${rec.targetStandard}`;
+                } else if (gapSeconds < 5) {
+                    simplifiedJustification = `${gapSeconds.toFixed(1)} seconds improvement needed for ${rec.targetStandard}`;
+                } else if (gapSeconds < 10) {
+                    simplifiedJustification = `Focus on technique - ${Math.round(gapSeconds)} seconds to ${rec.targetStandard}`;
                 } else {
-                    simplifiedJustification = `${rec.gapPercent.toFixed(1)}% gap to ${rec.targetStandard}`;
+                    simplifiedJustification = `Work on endurance - ${Math.round(gapSeconds)} seconds to ${rec.targetStandard}`;
                 }
 
                 if (rec.daysSinceLastSwim > 90) {
-                    simplifiedJustification += ` • Not tested in ${Math.floor(rec.daysSinceLastSwim / 30)}mo`;
+                    simplifiedJustification += ` • Needs testing (${Math.floor(rec.daysSinceLastSwim / 30)}mo since last swim)`;
+                } else if (rec.daysSinceLastSwim > 60) {
+                    simplifiedJustification += ` • Should test soon`;
                 }
 
                 // Calculate projected target date based on improvement rate
