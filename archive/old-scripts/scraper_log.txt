@@ -1,0 +1,9 @@
+Searching for: serena tsao
+Clicking SEE RESULTS button...
+Successfully navigated to timing results
+Found 0 competition years: []
+Total records collected: 0
+Data saved to: /Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/serena_tsao_1762109549165.json
+✅ Scraping completed successfully
+📄 Output file: /Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/serena_tsao_1762109549165.json
+📊 Total records: 0

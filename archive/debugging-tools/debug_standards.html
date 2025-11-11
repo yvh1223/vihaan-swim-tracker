@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Time Standards</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Debug Time Standards for Swara</h1>
+    <pre id="output">Loading...</pre>
+
+    <script>
+        async function debugTimeStandards() {
+            const output = document.getElementById('output');
+            const supabase = window.supabase.createClient(
+                'https://gwqwpicbtkamojwwlmlp.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+            );
+
+            // Fetch Swara's data
+            const { data: swimmers } = await supabase
+                .from('swimmers')
+                .select('*')
+                .eq('id', 3);
+
+            const swara = swimmers[0];
+            output.textContent = `Swimmer Data:\n${JSON.stringify(swara, null, 2)}\n\n`;
+
+            // Calculate age group
+            const currentAge = swara.current_age;
+            let ageGroup = '10 & under';
+            if (currentAge >= 13) {
+                ageGroup = '13-14';
+            } else if (currentAge >= 11) {
+                ageGroup = '11-12';
+            }
+
+            const genderForDB = swara.gender === 'F' || swara.gender === 'Girls' ? 'Girls' : 'Boys';
+
+            output.textContent += `Age Group Calculation:\n`;
+            output.textContent += `  current_age: ${currentAge}\n`;
+            output.textContent += `  ageGroup: ${ageGroup}\n`;
+            output.textContent += `  gender: ${swara.gender}\n`;
+            output.textContent += `  genderForDB: ${genderForDB}\n\n`;
+
+            // Fetch time standards for 50 BK
+            const baseEvent = '50 BK';
+            const { data: standards, error } = await supabase
+                .from('time_standards')
+                .select('*')
+                .eq('event_name', baseEvent)
+                .eq('age_group', ageGroup)
+                .eq('gender', genderForDB);
+
+            output.textContent += `Time Standards Query:\n`;
+            output.textContent += `  event_name: ${baseEvent}\n`;
+            output.textContent += `  age_group: ${ageGroup}\n`;
+            output.textContent += `  gender: ${genderForDB}\n\n`;
+
+            if (error) {
+                output.textContent += `ERROR: ${error.message}\n`;
+            } else if (standards && standards.length > 0) {
+                output.textContent += `Time Standards Found:\n${JSON.stringify(standards[0], null, 2)}\n`;
+            } else {
+                output.textContent += `No standards found!\n\n`;
+
+                // Try alternate queries
+                output.textContent += `Trying all variations...\n`;
+
+                const { data: allStandards } = await supabase
+                    .from('time_standards')
+                    .select('event_name, age_group, gender, a_standard')
+                    .ilike('event_name', '50 BK%');
+
+                output.textContent += `All 50 BK standards:\n${JSON.stringify(allStandards, null, 2)}\n`;
+            }
+        }
+
+        debugTimeStandards();
+    </script>
+</body>
+</html>

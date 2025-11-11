@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - Swim Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/styles-new.css">
+    <link rel="stylesheet" href="auth.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>🏊 Swim Tracker</h1>
+                <p class="auth-subtitle">Create Parent Account</p>
+            </div>
+
+            <form id="signupForm" class="auth-form">
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input
+                        type="text"
+                        id="fullName"
+                        name="fullName"
+                        placeholder="John Doe"
+                        required
+                        autocomplete="name"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="••••••••"
+                        required
+                        autocomplete="new-password"
+                        minlength="6"
+                    >
+                    <small class="form-help">Minimum 6 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        placeholder="••••••••"
+                        required
+                        autocomplete="new-password"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="swimmerSelect">Select Your Swimmer(s)</label>
+                    <select id="swimmerSelect" name="swimmers" multiple size="5" class="swimmer-multiselect">
+                        <option value="">Loading swimmers...</option>
+                    </select>
+                    <small class="form-help">Hold Ctrl/Cmd to select multiple swimmers</small>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                        <span>I agree to the <a href="#" class="link-primary">Terms of Service</a></span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-primary btn-full" id="signupBtn">
+                    <span id="signupBtnText">Create Account</span>
+                    <span id="signupBtnSpinner" class="spinner" style="display:none;">Creating account...</span>
+                </button>
+
+                <div id="authMessage" class="message"></div>
+            </form>
+
+            <div class="auth-links">
+                <span>Already have an account?</span>
+                <a href="login.html" class="link-primary">Login</a>
+            </div>
+
+            <div class="auth-divider">
+                <span>OR</span>
+            </div>
+
+            <a href="../index.html" class="btn-secondary btn-full">
+                Continue as guest to view public stats
+            </a>
+        </div>
+
+        <footer class="auth-footer">
+            <p>&copy; 2025 Swim Tracker. Built for swimmers and coaches.</p>
+        </footer>
+    </div>
+
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Load swimmers for selection
+        async function loadSwimmers() {
+            try {
+                const swimmers = await window.SupabaseClient.getAllSwimmers();
+                const select = document.getElementById('swimmerSelect');
+                select.innerHTML = swimmers.map(s =>
+                    `<option value="${s.id}">${s.full_name} (Age ${s.current_age}, ${s.gender})</option>`
+                ).join('');
+            } catch (error) {
+                console.error('Error loading swimmers:', error);
+                showMessage('Error loading swimmers. Please refresh the page.', 'error');
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await window.SupabaseClient.init();
+            await loadSwimmers();
+        });
+
+        // Signup form handler
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Get selected swimmers
+            const swimmerSelect = document.getElementById('swimmerSelect');
+            const selectedSwimmers = Array.from(swimmerSelect.selectedOptions).map(opt => parseInt(opt.value));
+
+            // Validation
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match!', 'error');
+                return;
+            }
+
+            if (selectedSwimmers.length === 0) {
+                showMessage('Please select at least one swimmer.', 'error');
+                return;
+            }
+
+            // Show loading state
+            document.getElementById('signupBtn').disabled = true;
+            document.getElementById('signupBtnText').style.display = 'none';
+            document.getElementById('signupBtnSpinner').style.display = 'inline';
+
+            try {
+                await signup(email, password, fullName, 'parent', selectedSwimmers);
+            } catch (error) {
+                console.error('Signup error:', error);
+                showMessage('Signup failed. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                document.getElementById('signupBtn').disabled = false;
+                document.getElementById('signupBtnText').style.display = 'inline';
+                document.getElementById('signupBtnSpinner').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

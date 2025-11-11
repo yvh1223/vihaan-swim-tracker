@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Swim Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/styles-new.css">
+    <link rel="stylesheet" href="auth.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>🏊 Swim Tracker</h1>
+                <p class="auth-subtitle">Coach & Parent Login</p>
+            </div>
+
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="••••••••"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="rememberMe" name="rememberMe">
+                        <span>Remember me</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-primary btn-full" id="loginBtn">
+                    <span id="loginBtnText">Login</span>
+                    <span id="loginBtnSpinner" class="spinner" style="display:none;">Logging in...</span>
+                </button>
+
+                <div id="authMessage" class="message"></div>
+            </form>
+
+            <div class="auth-links">
+                <a href="#" id="forgotPassword" class="link-secondary">Forgot password?</a>
+                <span class="separator">•</span>
+                <a href="signup.html" class="link-primary">Create account</a>
+            </div>
+
+            <div class="auth-divider">
+                <span>OR</span>
+            </div>
+
+            <a href="../index.html" class="btn-secondary btn-full">
+                Continue as guest to view public stats
+            </a>
+        </div>
+
+        <footer class="auth-footer">
+            <p>&copy; 2025 Swim Tracker. Built for swimmers and coaches.</p>
+        </footer>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Show loading state
+            document.getElementById('loginBtn').disabled = true;
+            document.getElementById('loginBtnText').style.display = 'none';
+            document.getElementById('loginBtnSpinner').style.display = 'inline';
+
+            try {
+                await login(email, password);
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('Login failed. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                document.getElementById('loginBtn').disabled = false;
+                document.getElementById('loginBtnText').style.display = 'inline';
+                document.getElementById('loginBtnSpinner').style.display = 'none';
+            }
+        });
+
+        // Forgot password handler
+        document.getElementById('forgotPassword').addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            const email = prompt('Enter your email address:');
+            if (!email) return;
+
+            try {
+                await resetPassword(email);
+                showMessage('Password reset link sent! Check your email.', 'success');
+            } catch (error) {
+                showMessage('Error sending reset link. Please try again.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

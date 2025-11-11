@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Age Transition Effect</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Age Transition Effect - Swara 50 BK SCY</h1>
+    <pre id="output">Loading...</pre>
+
+    <script>
+        async function verifyAgeTransition() {
+            const output = document.getElementById('output');
+            const supabase = window.supabase.createClient(
+                'https://gwqwpicbtkamojwwlmlp.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+            );
+
+            // Get 50 BK SCY results for Swara
+            const { data: results } = await supabase
+                .from('competition_results')
+                .select('event_name, event_date, time_seconds, age')
+                .eq('swimmer_id', 3)
+                .eq('event_name', '50 BK SCY')
+                .order('event_date');
+
+            output.textContent = `50 BK SCY Results for Swara:\n`;
+            output.textContent += '='.repeat(100) + '\n\n';
+
+            // Get standards for both age groups
+            const { data: standards10 } = await supabase
+                .from('time_standards')
+                .select('*')
+                .eq('event_name', '50 BK')
+                .eq('age_group', '10 & under')
+                .eq('gender', 'Girls')
+                .eq('course_type', 'SCY')
+                .single();
+
+            const { data: standards11 } = await supabase
+                .from('time_standards')
+                .select('*')
+                .eq('event_name', '50 BK')
+                .eq('age_group', '11-12')
+                .eq('gender', 'Girls')
+                .eq('course_type', 'SCY')
+                .single();
+
+            output.textContent += `Girls 10 & under SCY Standards:\n`;
+            output.textContent += `  AAAA: ${standards10.aaaa_standard}s | AAA: ${standards10.aaa_standard}s | AA: ${standards10.aa_standard}s\n`;
+            output.textContent += `  A: ${standards10.a_standard}s | BB: ${standards10.bb_standard}s | B: ${standards10.b_standard}s\n\n`;
+
+            output.textContent += `Girls 11-12 SCY Standards:\n`;
+            output.textContent += `  AAAA: ${standards11.aaaa_standard}s | AAA: ${standards11.aaa_standard}s | AA: ${standards11.aa_standard}s\n`;
+            output.textContent += `  A: ${standards11.a_standard}s | BB: ${standards11.bb_standard}s | B: ${standards11.b_standard}s\n\n`;
+            output.textContent += '='.repeat(100) + '\n\n';
+
+            // Analyze each swim
+            results.forEach((r, i) => {
+                const ageGroup = r.age >= 11 ? '11-12' : '10 & under';
+                const stds = r.age >= 11 ? standards11 : standards10;
+
+                // Determine standard achieved
+                let achieved = null;
+                if (r.time_seconds <= stds.aaaa_standard) achieved = 'AAAA';
+                else if (r.time_seconds <= stds.aaa_standard) achieved = 'AAA';
+                else if (r.time_seconds <= stds.aa_standard) achieved = 'AA';
+                else if (r.time_seconds <= stds.a_standard) achieved = 'A';
+                else if (r.time_seconds <= stds.bb_standard) achieved = 'BB';
+                else if (r.time_seconds <= stds.b_standard) achieved = 'B';
+                else achieved = 'Below B';
+
+                output.textContent += `${i + 1}. ${r.event_date} | Age: ${r.age} (${ageGroup}) | Time: ${r.time_seconds.toFixed(2)}s → ${achieved}\n`;
+            });
+
+            output.textContent += '\n' + '='.repeat(100) + '\n';
+            output.textContent += 'EXPLANATION:\n';
+            output.textContent += 'As Swara aged from 10 to 11, she moved from "10 & under" to "11-12" age group.\n';
+            output.textContent += 'The 11-12 standards are MUCH HARDER (faster times required).\n';
+            output.textContent += 'So the same time that was AAAA at age 10 might only be AA at age 11.\n';
+            output.textContent += 'This is CORRECT behavior - standards appropriately reflect age-based competition levels.\n';
+        }
+
+        verifyAgeTransition();
+    </script>
+</body>
+</html>

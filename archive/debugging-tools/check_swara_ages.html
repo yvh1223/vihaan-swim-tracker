@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Check Swara's Ages</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Swara's Competition Results - Age Check</h1>
+    <pre id="output">Loading...</pre>
+
+    <script>
+        async function checkAges() {
+            const output = document.getElementById('output');
+            const supabase = window.supabase.createClient(
+                'https://gwqwpicbtkamojwwlmlp.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+            );
+
+            // Get Swara's swimmer info
+            const { data: swimmer } = await supabase
+                .from('swimmers')
+                .select('*')
+                .eq('id', 3)
+                .single();
+
+            output.textContent = `Swimmer: ${swimmer.full_name}\n`;
+            output.textContent += `Current Age: ${swimmer.current_age}\n`;
+            output.textContent += `Gender: ${swimmer.gender}\n\n`;
+
+            // Get 50 FR SCY results
+            const { data: results } = await supabase
+                .from('competition_results')
+                .select('event_name, event_date, time_seconds, age, time_standard')
+                .eq('swimmer_id', 3)
+                .eq('event_name', '50 FR SCY')
+                .order('event_date');
+
+            output.textContent += `50 FR SCY Results (${results.length} total):\n`;
+            output.textContent += '='.repeat(80) + '\n';
+
+            results.forEach((r, i) => {
+                output.textContent += `${i+1}. Date: ${r.event_date} | Age: ${r.age} | Time: ${r.time_seconds.toFixed(2)}s | Stored Standard: ${r.time_standard || 'NULL'}\n`;
+            });
+
+            // Check Girls 10 & under AAAA standard for 50 FR SCY
+            output.textContent += '\n' + '='.repeat(80) + '\n';
+            output.textContent += 'Time Standards for 50 FR SCY:\n\n';
+
+            const ageGroups = ['10 & under', '11-12'];
+            for (const ag of ageGroups) {
+                const { data: std } = await supabase
+                    .from('time_standards')
+                    .select('*')
+                    .eq('event_name', '50 FR')
+                    .eq('age_group', ag)
+                    .eq('gender', 'Girls')
+                    .eq('course_type', 'SCY')
+                    .single();
+
+                if (std) {
+                    output.textContent += `Girls ${ag} SCY:\n`;
+                    output.textContent += `  AAAA: ${std.aaaa_standard}s\n`;
+                    output.textContent += `  AAA:  ${std.aaa_standard}s\n`;
+                    output.textContent += `  AA:   ${std.aa_standard}s\n`;
+                    output.textContent += `  A:    ${std.a_standard}s\n`;
+                    output.textContent += `  BB:   ${std.bb_standard}s\n`;
+                    output.textContent += `  B:    ${std.b_standard}s\n\n`;
+                }
+            }
+        }
+
+        checkAges();
+    </script>
+</body>
+</html>

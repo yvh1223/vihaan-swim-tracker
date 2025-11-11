@@ -1,0 +1,72 @@
+[
+  {
+    "firstName": "Mia",
+    "lastName": "Abareta",
+    "gender": "Girls"
+  },
+  {
+    "firstName": "Asa",
+    "lastName": "Davidson",
+    "gender": "Boys"
+  },
+  {
+    "firstName": "Austin",
+    "lastName": "Deng",
+    "gender": "Boys"
+  },
+  {
+    "firstName": "Nathanel",
+    "lastName": "Gelbman",
+    "gender": "Boys"
+  },
+  {
+    "firstName": "Audrey",
+    "lastName": "Gerard",
+    "gender": "Girls"
+  },
+  {
+    "firstName": "Parker",
+    "lastName": "Li",
+    "gender": "Boys"
+  },
+  {
+    "firstName": "Brooke",
+    "lastName": "Long",
+    "gender": "Girls"
+  },
+  {
+    "firstName": "Jason",
+    "lastName": "Ma",
+    "gender": "Boys"
+  },
+  {
+    "firstName": "Scarlett",
+    "lastName": "Mann",
+    "gender": "Girls"
+  },
+  {
+    "firstName": "Finley",
+    "lastName": "Payne",
+    "gender": "Girls"
+  },
+  {
+    "firstName": "William",
+    "lastName": "Power",
+    "gender": "Boys"
+  },
+  {
+    "firstName": "Parker",
+    "lastName": "Sprawls",
+    "gender": "Girls"
+  },
+  {
+    "firstName": "Jeremy",
+    "lastName": "Ting",
+    "gender": "Boys"
+  },
+  {
+    "firstName": "Eileen",
+    "lastName": "Zheng",
+    "gender": "Girls"
+  }
+]

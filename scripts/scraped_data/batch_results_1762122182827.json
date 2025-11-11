@@ -1,0 +1,156 @@
+[
+  {
+    "swimmer": {
+      "firstName": "Mia",
+      "lastName": "Abareta"
+    },
+    "success": true,
+    "recordCount": 204,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Mia_Abareta_1762122220150.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:23:40.222Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Asa",
+      "lastName": "Davidson"
+    },
+    "success": true,
+    "recordCount": 232,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Asa_Davidson_1762122266792.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:24:26.869Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Austin",
+      "lastName": "Deng"
+    },
+    "success": true,
+    "recordCount": 214,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Austin_Deng_1762122309963.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:25:10.031Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Nathanel",
+      "lastName": "Gelbman"
+    },
+    "success": true,
+    "recordCount": 276,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Nathanel_Gelbman_1762122350347.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:25:50.414Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Audrey",
+      "lastName": "Gerard"
+    },
+    "success": true,
+    "recordCount": 214,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Audrey_Gerard_1762122390473.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:26:30.531Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Parker",
+      "lastName": "Li"
+    },
+    "success": true,
+    "recordCount": 25,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Parker_Li_1762122423270.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:27:03.339Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Brooke",
+      "lastName": "Long"
+    },
+    "success": true,
+    "recordCount": 0,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Brooke_Long_1762122451483.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:27:31.571Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Jason",
+      "lastName": "Ma"
+    },
+    "success": true,
+    "recordCount": 0,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Jason_Ma_1762122479558.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:27:59.658Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Scarlett",
+      "lastName": "Mann"
+    },
+    "success": true,
+    "recordCount": 16,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Scarlett_Mann_1762122519161.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:28:39.217Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Finley",
+      "lastName": "Payne"
+    },
+    "success": true,
+    "recordCount": 148,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Finley_Payne_1762122556523.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:29:16.578Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "William",
+      "lastName": "Power"
+    },
+    "success": true,
+    "recordCount": 0,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/William_Power_1762122593356.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:29:53.413Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Parker",
+      "lastName": "Sprawls"
+    },
+    "success": true,
+    "recordCount": 280,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Parker_Sprawls_1762122637161.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:30:37.234Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Jeremy",
+      "lastName": "Ting"
+    },
+    "success": false,
+    "recordCount": 0,
+    "filepath": null,
+    "error": "Navigation failed",
+    "timestamp": "2025-11-02T22:30:55.029Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Eileen",
+      "lastName": "Zheng"
+    },
+    "success": true,
+    "recordCount": 106,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Eileen_Zheng_1762122691983.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:31:32.048Z"
+  }
+]

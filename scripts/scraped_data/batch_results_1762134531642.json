@@ -1,0 +1,35 @@
+[
+  {
+    "swimmer": {
+      "firstName": "Brooke",
+      "lastName": "Long"
+    },
+    "success": true,
+    "recordCount": 204,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Brooke_Long_1762134577033.json",
+    "error": null,
+    "timestamp": "2025-11-03T01:49:37.099Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Jason",
+      "lastName": "Ma"
+    },
+    "success": true,
+    "recordCount": 80,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Jason_Ma_1762134631036.json",
+    "error": null,
+    "timestamp": "2025-11-03T01:50:31.108Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "William",
+      "lastName": "Power"
+    },
+    "success": false,
+    "recordCount": 0,
+    "filepath": null,
+    "error": "Navigation timeout of 30000 ms exceeded",
+    "timestamp": "2025-11-03T01:51:07.153Z"
+  }
+]

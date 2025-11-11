@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach Dashboard - Swim Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/styles-new.css">
+    <link rel="stylesheet" href="auth.css">
+    <link rel="stylesheet" href="coach.css">
+</head>
+<body class="coach-page">
+    <!-- Coach Dashboard Container -->
+    <div class="coach-container">
+        <!-- Header -->
+        <header class="coach-header">
+            <div class="coach-header-content">
+                <h1 class="coach-logo">🏊 Swim Tracker - Coach Portal</h1>
+                <div class="coach-user-menu">
+                    <span class="coach-name" id="coachName">Loading...</span>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="coach-nav">
+            <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+                📊 Dashboard
+            </button>
+            <button class="nav-tab" data-tab="add-feedback" onclick="switchTab('add-feedback')">
+                📝 Add Feedback
+            </button>
+            <button class="nav-tab" data-tab="history" onclick="switchTab('history')">
+                📋 History
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="coach-main">
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-content active">
+                <!-- Recent Meets Section -->
+                <section class="coach-section">
+                    <h2 class="section-title">Recent Meets</h2>
+                    <div id="recentMeets" class="meets-grid">
+                        <p class="loading">Loading recent meets...</p>
+                    </div>
+                </section>
+
+                <!-- Active Swimmers Section -->
+                <section class="coach-section">
+                    <div class="section-header-row">
+                        <h2 class="section-title">Active Swimmers</h2>
+                        <input
+                            type="search"
+                            id="swimmerSearch"
+                            class="search-input"
+                            placeholder="Search swimmers..."
+                            oninput="filterSwimmers()"
+                        >
+                    </div>
+                    <div id="swimmersList" class="swimmers-grid">
+                        <p class="loading">Loading swimmers...</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Add Feedback Tab -->
+            <div id="add-feedback-tab" class="tab-content">
+                <section class="coach-section">
+                    <h2 class="section-title">Add Feedback for Swimmer</h2>
+
+                    <!-- Swimmer Selection -->
+                    <div class="form-group">
+                        <label for="feedbackSwimmerSelect">Select Swimmer</label>
+                        <select id="feedbackSwimmerSelect" class="form-select" onchange="loadSwimmerInfo()">
+                            <option value="">-- Select a swimmer --</option>
+                        </select>
+                    </div>
+
+                    <!-- Swimmer Info Display -->
+                    <div id="swimmerInfo" class="swimmer-info" style="display:none;">
+                        <div class="info-card">
+                            <h3 id="swimmerInfoName"></h3>
+                            <p id="swimmerInfoDetails"></p>
+                            <a href="#" id="viewStatsLink" class="link-primary" target="_blank">View Performance Stats →</a>
+                        </div>
+                    </div>
+
+                    <!-- Feedback Form -->
+                    <form id="feedbackForm" class="feedback-form" style="display:none;">
+                        <!-- Meet Information -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">Meet Information</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="meetDate">Meet Date *</label>
+                                    <input type="date" id="meetDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="meetName">Meet Name</label>
+                                    <input type="text" id="meetName" placeholder="e.g., LAC Fall Invitational">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Strengths -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">✅ Strengths (What went well)</h3>
+                            <div id="strengthsTags" class="tags-container"></div>
+                            <div class="quick-tags">
+                                <span class="quick-tag" onclick="addTag('strengths', 'Strong starts')">Strong starts</span>
+                                <span class="quick-tag" onclick="addTag('strengths', 'Excellent streamline')">Excellent streamline</span>
+                                <span class="quick-tag" onclick="addTag('strengths', 'Good underwater kicks')">Good kicks</span>
+                                <span class="quick-tag" onclick="addTag('strengths', 'Great race strategy')">Race strategy</span>
+                                <span class="quick-tag" onclick="addTag('strengths', 'Strong finish')">Strong finish</span>
+                            </div>
+                            <input type="text" id="strengthsInput" class="tag-input" placeholder="Type and press Enter to add...">
+                        </div>
+
+                        <!-- Areas to Improve -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">🎯 Areas to Improve</h3>
+                            <div id="improvementsTags" class="tags-container"></div>
+                            <div class="quick-tags">
+                                <span class="quick-tag" onclick="addTag('improvements', 'Turn technique')">Turns</span>
+                                <span class="quick-tag" onclick="addTag('improvements', 'Breathing rhythm')">Breathing</span>
+                                <span class="quick-tag" onclick="addTag('improvements', 'Pacing')">Pacing</span>
+                                <span class="quick-tag" onclick="addTag('improvements', 'Start reaction')">Starts</span>
+                                <span class="quick-tag" onclick="addTag('improvements', 'Finish touch')">Finish</span>
+                            </div>
+                            <input type="text" id="improvementsInput" class="tag-input" placeholder="Type and press Enter to add...">
+                        </div>
+
+                        <!-- Practice Focus -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">🏊 Practice Focus (This week)</h3>
+                            <div id="focusTags" class="tags-container"></div>
+                            <div class="quick-tags">
+                                <span class="quick-tag" onclick="addTag('focus', 'Flip turns')">Flip turns</span>
+                                <span class="quick-tag" onclick="addTag('focus', 'Underwater dolphin kicks')">Dolphin kicks</span>
+                                <span class="quick-tag" onclick="addTag('focus', 'Bilateral breathing')">Bilateral breathing</span>
+                                <span class="quick-tag" onclick="addTag('focus', 'Streamline position')">Streamline</span>
+                                <span class="quick-tag" onclick="addTag('focus', 'Sprint speed work')">Sprint work</span>
+                            </div>
+                            <input type="text" id="focusInput" class="tag-input" placeholder="Type and press Enter to add...">
+                        </div>
+
+                        <!-- Detailed Feedback -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">💬 Detailed Feedback</h3>
+                            <textarea
+                                id="feedbackText"
+                                class="feedback-textarea"
+                                rows="6"
+                                placeholder="Provide detailed feedback about technique, race strategy, mental preparation, etc."
+                                required
+                            ></textarea>
+                        </div>
+
+                        <!-- Goals for Next Meet -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">🎯 Goals for Next Meet</h3>
+                            <textarea
+                                id="goalsText"
+                                class="feedback-textarea"
+                                rows="3"
+                                placeholder="What should they focus on for the next competition?"
+                            ></textarea>
+                        </div>
+
+                        <!-- Visibility Settings -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">Visibility Settings</h3>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="visibility" value="private">
+                                    <span>Private (Coach only)</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="visibility" value="parent-visible" checked>
+                                    <span>Parents can view (Recommended)</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="visibility" value="public">
+                                    <span>Public (Everyone can see)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary btn-large">
+                                💾 Save Feedback
+                            </button>
+                            <button type="button" class="btn-secondary btn-large" onclick="resetFeedbackForm()">
+                                Clear Form
+                            </button>
+                        </div>
+
+                        <div id="feedbackMessage" class="message"></div>
+                    </form>
+                </section>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history-tab" class="tab-content">
+                <section class="coach-section">
+                    <h2 class="section-title">Feedback History</h2>
+
+                    <!-- Filters -->
+                    <div class="history-filters">
+                        <select id="historySwimmerFilter" class="form-select" onchange="filterHistory()">
+                            <option value="">All Swimmers</option>
+                        </select>
+                        <select id="historyMonthFilter" class="form-select" onchange="filterHistory()">
+                            <option value="">All Time</option>
+                            <option value="1">Last Month</option>
+                            <option value="3">Last 3 Months</option>
+                            <option value="6">Last 6 Months</option>
+                        </select>
+                    </div>
+
+                    <div id="feedbackHistory" class="feedback-history">
+                        <p class="loading">Loading feedback history...</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="coach-footer">
+            <p>&copy; 2025 Swim Tracker - Coach Portal</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/coach-feedback.js"></script>
+    <script>
+        // Require coach role on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Check authentication and require coach role
+            const hasAccess = await requireRole('coach');
+            if (!hasAccess) return;
+
+            // Initialize coach dashboard
+            await initCoachDashboard();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,932 @@
+🏊‍♂️ USA Swimming Data Scraper V2
+
+==================================================
+
+🏊 Searching for: serena tsao
+PAGE LOG: Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://fonts.gstatic.com/s/sourcesanspro/v23/6xK3dSBYKcSV-LCoeQqfX1RYOo3qOK7lujVj9w.woff2
+PAGE LOG: Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://fonts.gstatic.com/s/sourcesanspro/v23/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwlxdu3cOWxw.woff2
+PAGE LOG: Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://fonts.gstatic.com/s/oswald/v57/TK3iWkUHHAIjg752GT8Gl-1PKw.woff2
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/Auth/GetSecurityInfoForToken
+PAGE LOG: Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://fonts.gstatic.com/s/sourcesanspro/v23/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwlxdu3cOWxw.woff2
+PAGE LOG: GET: https://commonapi.usaswimming.org/swims/EnvironmentVariable/environment/PROD
+PAGE LOG: GET: https://commonapi.usaswimming.org/swims/EnvironmentVariable/environment/PROD
+PAGE LOG: GET: https://commonapi.usaswimming.org/swims/EnvironmentVariable/environment/PROD
+PAGE LOG: GET: https://commonapi.usaswimming.org/swims/EnvironmentVariable/environment/PROD
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/GetSisenseAuthToken
+📸 Screenshot saved: /Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/screenshots/step1_search_page_1762109667652.png
+📸 Screenshot saved: /Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/screenshots/step2_form_filled_1762109668015.png
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+📸 Screenshot saved: /Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/screenshots/step3_search_results_1762109671117.png
+
+🔍 Analyzing page structure: Search Results Page
+{
+  "url": "https://data.usaswimming.org/datahub/usas/individualsearch",
+  "title": "USA Swimming",
+  "tableCount": 1,
+  "tables": [
+    {
+      "index": 0,
+      "rowCount": 2,
+      "columnCount": 5,
+      "headers": [
+        "Name Sort Name By AlphabeticalSort Name By Alphabetical",
+        "Age Sort Age By NumericalSort Age By Numerical",
+        "LSC Sort LSC By AlphabeticalSort LSC By Alphabetical",
+        "Club Sort Club By AlphabeticalSort Club By Alphabetical",
+        ""
+      ],
+      "firstRowData": [
+        "Serena Amy Tsao",
+        "8",
+        "NT",
+        "Lakeside Aquatic Club",
+        "See Results"
+      ]
+    }
+  ],
+  "selectCount": 0,
+  "selects": [],
+  "buttonCount": 9
+}
+✅ Results found, looking for SEE RESULTS button...
+PAGE LOG: Found buttons: JSHandle@array
+PAGE LOG: Clicking button: See Results
+✅ Clicked SEE RESULTS button
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/GetSisenseAuthToken
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+📸 Screenshot saved: /Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/screenshots/step4_timing_results_1762109678312.png
+
+🔍 Analyzing page structure: Timing Results Page
+{
+  "url": "https://data.usaswimming.org/datahub/usas/individualsearch/times",
+  "title": "USA Swimming",
+  "tableCount": 1,
+  "tables": [
+    {
+      "index": 0,
+      "rowCount": 10,
+      "columnCount": 10,
+      "headers": [
+        "Event Sort Event By NumericalSort Event By Numerical",
+        "Swim Time Sort Swim Time By TimeSort Swim Time By Time",
+        "Age Sort Age By NumericalSort Age By Numerical",
+        "Points Sort Points By NumericalSort Points By Numerical",
+        "Time Standard Sort Time Standard By AlphabeticalSort Time Standard By Alphabetical",
+        "Meet Sort Meet By AlphabeticalSort Meet By Alphabetical",
+        "LSC Sort LSC By AlphabeticalSort LSC By Alphabetical",
+        "Team Sort Team By AlphabeticalSort Team By Alphabetical",
+        "Swim Date Sort Swim Date By DateSort Swim Date By Date",
+        ""
+      ],
+      "firstRowData": [
+        "50 FR SCY",
+        "35.18",
+        "8",
+        "445",
+        "BB",
+        "2025 NT LAC Splashing Pumpkins",
+        "NT",
+        "Lakeside Aquatic Club",
+        "10/04/2025",
+        "Progression"
+      ]
+    }
+  ],
+  "selectCount": 4,
+  "selects": [
+    {
+      "index": 0,
+      "name": "competitionYearId",
+      "id": "competitionYearId",
+      "optionCount": 35,
+      "options": [
+        "",
+        "-1",
+        "2026",
+        "2025",
+        "2024"
+      ]
+    },
+    {
+      "index": 1,
+      "name": "timeStandardId",
+      "id": "timeStandardId",
+      "optionCount": 17,
+      "options": [
+        "",
+        "-1",
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "index": 2,
+      "name": "displayId",
+      "id": "displayId",
+      "optionCount": 3,
+      "options": [
+        "",
+        "1",
+        "2"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "courseId",
+      "id": "courseId",
+      "optionCount": 5,
+      "options": [
+        "",
+        "-1",
+        "SCY",
+        "SCM",
+        "LCM"
+      ]
+    }
+  ],
+  "buttonCount": 45
+}
+✅ Successfully navigated to timing results
+
+📅 Getting available competition years...
+PAGE LOG: Found select with 35 options using selector: select
+✅ Found 34 competition years: [
+  '-1',   '2026', '2025', '2024',
+  '2023', '2022', '2021', '2020',
+  '2019', '2018', '2017', '2016',
+  '2015', '2014', '2013', '2012',
+  '2011', '2010', '2009', '2008',
+  '2007', '2006', '2005', '2004',
+  '2003', '2002', '2001', '2000',
+  '1999', '1998', '1997', '1996',
+  '1995', '1994'
+]
+
+🔄 Changing to year: -1
+PAGE LOG: Selected year -1 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: -1
+
+📊 Extracting timing data for year: -1...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 89 data rows
+PAGE LOG: Row 0: 10 cells
+PAGE LOG: Row 0 data: JSHandle@object
+PAGE LOG: Row 1: 10 cells
+PAGE LOG: Row 1 data: JSHandle@object
+PAGE LOG: Row 2: 10 cells
+PAGE LOG: Row 2 data: JSHandle@object
+PAGE LOG: Row 3: 10 cells
+PAGE LOG: Row 3 data: JSHandle@object
+PAGE LOG: Row 4: 10 cells
+PAGE LOG: Row 4 data: JSHandle@object
+PAGE LOG: Row 5: 10 cells
+PAGE LOG: Row 5 data: JSHandle@object
+PAGE LOG: Row 6: 10 cells
+PAGE LOG: Row 6 data: JSHandle@object
+PAGE LOG: Row 7: 10 cells
+PAGE LOG: Row 7 data: JSHandle@object
+PAGE LOG: Row 8: 10 cells
+PAGE LOG: Row 8 data: JSHandle@object
+PAGE LOG: Row 9: 10 cells
+PAGE LOG: Row 9 data: JSHandle@object
+PAGE LOG: Row 10: 10 cells
+PAGE LOG: Row 10 data: JSHandle@object
+PAGE LOG: Row 11: 10 cells
+PAGE LOG: Row 11 data: JSHandle@object
+PAGE LOG: Row 12: 10 cells
+PAGE LOG: Row 12 data: JSHandle@object
+PAGE LOG: Row 13: 10 cells
+PAGE LOG: Row 13 data: JSHandle@object
+PAGE LOG: Row 14: 10 cells
+PAGE LOG: Row 14 data: JSHandle@object
+PAGE LOG: Row 15: 10 cells
+PAGE LOG: Row 15 data: JSHandle@object
+PAGE LOG: Row 16: 10 cells
+PAGE LOG: Row 16 data: JSHandle@object
+PAGE LOG: Row 17: 10 cells
+PAGE LOG: Row 17 data: JSHandle@object
+PAGE LOG: Row 18: 10 cells
+PAGE LOG: Row 18 data: JSHandle@object
+PAGE LOG: Row 19: 10 cells
+PAGE LOG: Row 19 data: JSHandle@object
+PAGE LOG: Row 20: 10 cells
+PAGE LOG: Row 20 data: JSHandle@object
+PAGE LOG: Row 21: 10 cells
+PAGE LOG: Row 21 data: JSHandle@object
+PAGE LOG: Row 22: 10 cells
+PAGE LOG: Row 22 data: JSHandle@object
+PAGE LOG: Row 23: 10 cells
+PAGE LOG: Row 23 data: JSHandle@object
+PAGE LOG: Row 24: 10 cells
+PAGE LOG: Row 24 data: JSHandle@object
+PAGE LOG: Row 25: 10 cells
+PAGE LOG: Row 25 data: JSHandle@object
+PAGE LOG: Row 26: 10 cells
+PAGE LOG: Row 26 data: JSHandle@object
+PAGE LOG: Row 27: 10 cells
+PAGE LOG: Row 27 data: JSHandle@object
+PAGE LOG: Row 28: 10 cells
+PAGE LOG: Row 28 data: JSHandle@object
+PAGE LOG: Row 29: 10 cells
+PAGE LOG: Row 29 data: JSHandle@object
+PAGE LOG: Row 30: 10 cells
+PAGE LOG: Row 30 data: JSHandle@object
+PAGE LOG: Row 31: 10 cells
+PAGE LOG: Row 31 data: JSHandle@object
+PAGE LOG: Row 32: 10 cells
+PAGE LOG: Row 32 data: JSHandle@object
+PAGE LOG: Row 33: 10 cells
+PAGE LOG: Row 33 data: JSHandle@object
+PAGE LOG: Row 34: 10 cells
+PAGE LOG: Row 34 data: JSHandle@object
+PAGE LOG: Row 35: 10 cells
+PAGE LOG: Row 35 data: JSHandle@object
+PAGE LOG: Row 36: 10 cells
+PAGE LOG: Row 36 data: JSHandle@object
+PAGE LOG: Row 37: 10 cells
+PAGE LOG: Row 37 data: JSHandle@object
+PAGE LOG: Row 38: 10 cells
+PAGE LOG: Row 38 data: JSHandle@object
+PAGE LOG: Row 39: 10 cells
+PAGE LOG: Row 39 data: JSHandle@object
+PAGE LOG: Row 40: 10 cells
+PAGE LOG: Row 40 data: JSHandle@object
+PAGE LOG: Row 41: 10 cells
+PAGE LOG: Row 41 data: JSHandle@object
+PAGE LOG: Row 42: 10 cells
+PAGE LOG: Row 42 data: JSHandle@object
+PAGE LOG: Row 43: 10 cells
+PAGE LOG: Row 43 data: JSHandle@object
+PAGE LOG: Row 44: 10 cells
+PAGE LOG: Row 44 data: JSHandle@object
+PAGE LOG: Row 45: 10 cells
+PAGE LOG: Row 45 data: JSHandle@object
+PAGE LOG: Row 46: 10 cells
+PAGE LOG: Row 46 data: JSHandle@object
+PAGE LOG: Row 47: 10 cells
+PAGE LOG: Row 47 data: JSHandle@object
+PAGE LOG: Row 48: 10 cells
+PAGE LOG: Row 48 data: JSHandle@object
+PAGE LOG: Row 49: 10 cells
+PAGE LOG: Row 49 data: JSHandle@object
+PAGE LOG: Row 50: 10 cells
+PAGE LOG: Row 50 data: JSHandle@object
+PAGE LOG: Row 51: 10 cells
+PAGE LOG: Row 51 data: JSHandle@object
+PAGE LOG: Row 52: 10 cells
+PAGE LOG: Row 52 data: JSHandle@object
+PAGE LOG: Row 53: 10 cells
+PAGE LOG: Row 53 data: JSHandle@object
+PAGE LOG: Row 54: 10 cells
+PAGE LOG: Row 54 data: JSHandle@object
+PAGE LOG: Row 55: 10 cells
+PAGE LOG: Row 55 data: JSHandle@object
+PAGE LOG: Row 56: 10 cells
+PAGE LOG: Row 56 data: JSHandle@object
+PAGE LOG: Row 57: 10 cells
+PAGE LOG: Row 57 data: JSHandle@object
+PAGE LOG: Row 58: 10 cells
+PAGE LOG: Row 58 data: JSHandle@object
+PAGE LOG: Row 59: 10 cells
+PAGE LOG: Row 59 data: JSHandle@object
+PAGE LOG: Row 60: 10 cells
+PAGE LOG: Row 60 data: JSHandle@object
+PAGE LOG: Row 61: 10 cells
+PAGE LOG: Row 61 data: JSHandle@object
+PAGE LOG: Row 62: 10 cells
+PAGE LOG: Row 62 data: JSHandle@object
+PAGE LOG: Row 63: 10 cells
+PAGE LOG: Row 63 data: JSHandle@object
+PAGE LOG: Row 64: 10 cells
+PAGE LOG: Row 64 data: JSHandle@object
+PAGE LOG: Row 65: 10 cells
+PAGE LOG: Row 65 data: JSHandle@object
+PAGE LOG: Row 66: 10 cells
+PAGE LOG: Row 66 data: JSHandle@object
+PAGE LOG: Row 67: 10 cells
+PAGE LOG: Row 67 data: JSHandle@object
+PAGE LOG: Row 68: 10 cells
+PAGE LOG: Row 68 data: JSHandle@object
+PAGE LOG: Row 69: 10 cells
+PAGE LOG: Row 69 data: JSHandle@object
+PAGE LOG: Row 70: 10 cells
+PAGE LOG: Row 70 data: JSHandle@object
+PAGE LOG: Row 71: 10 cells
+PAGE LOG: Row 71 data: JSHandle@object
+PAGE LOG: Row 72: 10 cells
+PAGE LOG: Row 72 data: JSHandle@object
+PAGE LOG: Row 73: 10 cells
+PAGE LOG: Row 73 data: JSHandle@object
+PAGE LOG: Row 74: 10 cells
+PAGE LOG: Row 74 data: JSHandle@object
+PAGE LOG: Row 75: 10 cells
+PAGE LOG: Row 75 data: JSHandle@object
+PAGE LOG: Row 76: 10 cells
+PAGE LOG: Row 76 data: JSHandle@object
+PAGE LOG: Row 77: 10 cells
+PAGE LOG: Row 77 data: JSHandle@object
+PAGE LOG: Row 78: 10 cells
+PAGE LOG: Row 78 data: JSHandle@object
+PAGE LOG: Row 79: 10 cells
+PAGE LOG: Row 79 data: JSHandle@object
+PAGE LOG: Row 80: 10 cells
+PAGE LOG: Row 80 data: JSHandle@object
+PAGE LOG: Row 81: 10 cells
+PAGE LOG: Row 81 data: JSHandle@object
+PAGE LOG: Row 82: 10 cells
+PAGE LOG: Row 82 data: JSHandle@object
+PAGE LOG: Row 83: 10 cells
+PAGE LOG: Row 83 data: JSHandle@object
+PAGE LOG: Row 84: 10 cells
+PAGE LOG: Row 84 data: JSHandle@object
+PAGE LOG: Row 85: 10 cells
+PAGE LOG: Row 85 data: JSHandle@object
+PAGE LOG: Row 86: 10 cells
+PAGE LOG: Row 86 data: JSHandle@object
+PAGE LOG: Row 87: 10 cells
+PAGE LOG: Row 87 data: JSHandle@object
+PAGE LOG: Row 88: 10 cells
+PAGE LOG: Row 88 data: JSHandle@object
+✅ Extracted 89 timing records
+
+🔄 Changing to year: 2026
+PAGE LOG: Selected year 2026 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2026
+
+📊 Extracting timing data for year: 2026...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 9 data rows
+PAGE LOG: Row 0: 10 cells
+PAGE LOG: Row 0 data: JSHandle@object
+PAGE LOG: Row 1: 10 cells
+PAGE LOG: Row 1 data: JSHandle@object
+PAGE LOG: Row 2: 10 cells
+PAGE LOG: Row 2 data: JSHandle@object
+PAGE LOG: Row 3: 10 cells
+PAGE LOG: Row 3 data: JSHandle@object
+PAGE LOG: Row 4: 10 cells
+PAGE LOG: Row 4 data: JSHandle@object
+PAGE LOG: Row 5: 10 cells
+PAGE LOG: Row 5 data: JSHandle@object
+PAGE LOG: Row 6: 10 cells
+PAGE LOG: Row 6 data: JSHandle@object
+PAGE LOG: Row 7: 10 cells
+PAGE LOG: Row 7 data: JSHandle@object
+PAGE LOG: Row 8: 10 cells
+PAGE LOG: Row 8 data: JSHandle@object
+✅ Extracted 9 timing records
+
+🔄 Changing to year: 2025
+PAGE LOG: Selected year 2025 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2025
+
+📊 Extracting timing data for year: 2025...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 70 data rows
+PAGE LOG: Row 0: 10 cells
+PAGE LOG: Row 0 data: JSHandle@object
+PAGE LOG: Row 1: 10 cells
+PAGE LOG: Row 1 data: JSHandle@object
+PAGE LOG: Row 2: 10 cells
+PAGE LOG: Row 2 data: JSHandle@object
+PAGE LOG: Row 3: 10 cells
+PAGE LOG: Row 3 data: JSHandle@object
+PAGE LOG: Row 4: 10 cells
+PAGE LOG: Row 4 data: JSHandle@object
+PAGE LOG: Row 5: 10 cells
+PAGE LOG: Row 5 data: JSHandle@object
+PAGE LOG: Row 6: 10 cells
+PAGE LOG: Row 6 data: JSHandle@object
+PAGE LOG: Row 7: 10 cells
+PAGE LOG: Row 7 data: JSHandle@object
+PAGE LOG: Row 8: 10 cells
+PAGE LOG: Row 8 data: JSHandle@object
+PAGE LOG: Row 9: 10 cells
+PAGE LOG: Row 9 data: JSHandle@object
+PAGE LOG: Row 10: 10 cells
+PAGE LOG: Row 10 data: JSHandle@object
+PAGE LOG: Row 11: 10 cells
+PAGE LOG: Row 11 data: JSHandle@object
+PAGE LOG: Row 12: 10 cells
+PAGE LOG: Row 12 data: JSHandle@object
+PAGE LOG: Row 13: 10 cells
+PAGE LOG: Row 13 data: JSHandle@object
+PAGE LOG: Row 14: 10 cells
+PAGE LOG: Row 14 data: JSHandle@object
+PAGE LOG: Row 15: 10 cells
+PAGE LOG: Row 15 data: JSHandle@object
+PAGE LOG: Row 16: 10 cells
+PAGE LOG: Row 16 data: JSHandle@object
+PAGE LOG: Row 17: 10 cells
+PAGE LOG: Row 17 data: JSHandle@object
+PAGE LOG: Row 18: 10 cells
+PAGE LOG: Row 18 data: JSHandle@object
+PAGE LOG: Row 19: 10 cells
+PAGE LOG: Row 19 data: JSHandle@object
+PAGE LOG: Row 20: 10 cells
+PAGE LOG: Row 20 data: JSHandle@object
+PAGE LOG: Row 21: 10 cells
+PAGE LOG: Row 21 data: JSHandle@object
+PAGE LOG: Row 22: 10 cells
+PAGE LOG: Row 22 data: JSHandle@object
+PAGE LOG: Row 23: 10 cells
+PAGE LOG: Row 23 data: JSHandle@object
+PAGE LOG: Row 24: 10 cells
+PAGE LOG: Row 24 data: JSHandle@object
+PAGE LOG: Row 25: 10 cells
+PAGE LOG: Row 25 data: JSHandle@object
+PAGE LOG: Row 26: 10 cells
+PAGE LOG: Row 26 data: JSHandle@object
+PAGE LOG: Row 27: 10 cells
+PAGE LOG: Row 27 data: JSHandle@object
+PAGE LOG: Row 28: 10 cells
+PAGE LOG: Row 28 data: JSHandle@object
+PAGE LOG: Row 29: 10 cells
+PAGE LOG: Row 29 data: JSHandle@object
+PAGE LOG: Row 30: 10 cells
+PAGE LOG: Row 30 data: JSHandle@object
+PAGE LOG: Row 31: 10 cells
+PAGE LOG: Row 31 data: JSHandle@object
+PAGE LOG: Row 32: 10 cells
+PAGE LOG: Row 32 data: JSHandle@object
+PAGE LOG: Row 33: 10 cells
+PAGE LOG: Row 33 data: JSHandle@object
+PAGE LOG: Row 34: 10 cells
+PAGE LOG: Row 34 data: JSHandle@object
+PAGE LOG: Row 35: 10 cells
+PAGE LOG: Row 35 data: JSHandle@object
+PAGE LOG: Row 36: 10 cells
+PAGE LOG: Row 36 data: JSHandle@object
+PAGE LOG: Row 37: 10 cells
+PAGE LOG: Row 37 data: JSHandle@object
+PAGE LOG: Row 38: 10 cells
+PAGE LOG: Row 38 data: JSHandle@object
+PAGE LOG: Row 39: 10 cells
+PAGE LOG: Row 39 data: JSHandle@object
+PAGE LOG: Row 40: 10 cells
+PAGE LOG: Row 40 data: JSHandle@object
+PAGE LOG: Row 41: 10 cells
+PAGE LOG: Row 41 data: JSHandle@object
+PAGE LOG: Row 42: 10 cells
+PAGE LOG: Row 42 data: JSHandle@object
+PAGE LOG: Row 43: 10 cells
+PAGE LOG: Row 43 data: JSHandle@object
+PAGE LOG: Row 44: 10 cells
+PAGE LOG: Row 44 data: JSHandle@object
+PAGE LOG: Row 45: 10 cells
+PAGE LOG: Row 45 data: JSHandle@object
+PAGE LOG: Row 46: 10 cells
+PAGE LOG: Row 46 data: JSHandle@object
+PAGE LOG: Row 47: 10 cells
+PAGE LOG: Row 47 data: JSHandle@object
+PAGE LOG: Row 48: 10 cells
+PAGE LOG: Row 48 data: JSHandle@object
+PAGE LOG: Row 49: 10 cells
+PAGE LOG: Row 49 data: JSHandle@object
+PAGE LOG: Row 50: 10 cells
+PAGE LOG: Row 50 data: JSHandle@object
+PAGE LOG: Row 51: 10 cells
+PAGE LOG: Row 51 data: JSHandle@object
+PAGE LOG: Row 52: 10 cells
+PAGE LOG: Row 52 data: JSHandle@object
+PAGE LOG: Row 53: 10 cells
+PAGE LOG: Row 53 data: JSHandle@object
+PAGE LOG: Row 54: 10 cells
+PAGE LOG: Row 54 data: JSHandle@object
+PAGE LOG: Row 55: 10 cells
+PAGE LOG: Row 55 data: JSHandle@object
+PAGE LOG: Row 56: 10 cells
+PAGE LOG: Row 56 data: JSHandle@object
+PAGE LOG: Row 57: 10 cells
+PAGE LOG: Row 57 data: JSHandle@object
+PAGE LOG: Row 58: 10 cells
+PAGE LOG: Row 58 data: JSHandle@object
+PAGE LOG: Row 59: 10 cells
+PAGE LOG: Row 59 data: JSHandle@object
+PAGE LOG: Row 60: 10 cells
+PAGE LOG: Row 60 data: JSHandle@object
+PAGE LOG: Row 61: 10 cells
+PAGE LOG: Row 61 data: JSHandle@object
+PAGE LOG: Row 62: 10 cells
+PAGE LOG: Row 62 data: JSHandle@object
+PAGE LOG: Row 63: 10 cells
+PAGE LOG: Row 63 data: JSHandle@object
+PAGE LOG: Row 64: 10 cells
+PAGE LOG: Row 64 data: JSHandle@object
+PAGE LOG: Row 65: 10 cells
+PAGE LOG: Row 65 data: JSHandle@object
+PAGE LOG: Row 66: 10 cells
+PAGE LOG: Row 66 data: JSHandle@object
+PAGE LOG: Row 67: 10 cells
+PAGE LOG: Row 67 data: JSHandle@object
+PAGE LOG: Row 68: 10 cells
+PAGE LOG: Row 68 data: JSHandle@object
+PAGE LOG: Row 69: 10 cells
+PAGE LOG: Row 69 data: JSHandle@object
+✅ Extracted 70 timing records
+
+🔄 Changing to year: 2024
+PAGE LOG: Selected year 2024 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2024
+
+📊 Extracting timing data for year: 2024...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 10 data rows
+PAGE LOG: Row 0: 10 cells
+PAGE LOG: Row 0 data: JSHandle@object
+PAGE LOG: Row 1: 10 cells
+PAGE LOG: Row 1 data: JSHandle@object
+PAGE LOG: Row 2: 10 cells
+PAGE LOG: Row 2 data: JSHandle@object
+PAGE LOG: Row 3: 10 cells
+PAGE LOG: Row 3 data: JSHandle@object
+PAGE LOG: Row 4: 10 cells
+PAGE LOG: Row 4 data: JSHandle@object
+PAGE LOG: Row 5: 10 cells
+PAGE LOG: Row 5 data: JSHandle@object
+PAGE LOG: Row 6: 10 cells
+PAGE LOG: Row 6 data: JSHandle@object
+PAGE LOG: Row 7: 10 cells
+PAGE LOG: Row 7 data: JSHandle@object
+PAGE LOG: Row 8: 10 cells
+PAGE LOG: Row 8 data: JSHandle@object
+PAGE LOG: Row 9: 10 cells
+PAGE LOG: Row 9 data: JSHandle@object
+✅ Extracted 10 timing records
+
+🔄 Changing to year: 2023
+PAGE LOG: Selected year 2023 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2023
+
+📊 Extracting timing data for year: 2023...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2022
+PAGE LOG: Selected year 2022 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2022
+
+📊 Extracting timing data for year: 2022...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2021
+PAGE LOG: Selected year 2021 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2021
+
+📊 Extracting timing data for year: 2021...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2020
+PAGE LOG: Selected year 2020 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2020
+
+📊 Extracting timing data for year: 2020...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2019
+PAGE LOG: Selected year 2019 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2019
+
+📊 Extracting timing data for year: 2019...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2018
+PAGE LOG: Selected year 2018 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2018
+
+📊 Extracting timing data for year: 2018...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2017
+PAGE LOG: Selected year 2017 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2017
+
+📊 Extracting timing data for year: 2017...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2016
+PAGE LOG: Selected year 2016 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2016
+
+📊 Extracting timing data for year: 2016...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2015
+PAGE LOG: Selected year 2015 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2015
+
+📊 Extracting timing data for year: 2015...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2014
+PAGE LOG: Selected year 2014 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2014
+
+📊 Extracting timing data for year: 2014...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2013
+PAGE LOG: Selected year 2013 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2013
+
+📊 Extracting timing data for year: 2013...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2012
+PAGE LOG: Selected year 2012 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2012
+
+📊 Extracting timing data for year: 2012...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2011
+PAGE LOG: Selected year 2011 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2011
+
+📊 Extracting timing data for year: 2011...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2010
+PAGE LOG: Selected year 2010 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2010
+
+📊 Extracting timing data for year: 2010...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2009
+PAGE LOG: Selected year 2009 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2009
+
+📊 Extracting timing data for year: 2009...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2008
+PAGE LOG: Selected year 2008 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2008
+
+📊 Extracting timing data for year: 2008...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2007
+PAGE LOG: Selected year 2007 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2007
+
+📊 Extracting timing data for year: 2007...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2006
+PAGE LOG: Selected year 2006 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2006
+
+📊 Extracting timing data for year: 2006...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2005
+PAGE LOG: Selected year 2005 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2005
+
+📊 Extracting timing data for year: 2005...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2004
+PAGE LOG: Selected year 2004 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2004
+
+📊 Extracting timing data for year: 2004...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2003
+PAGE LOG: Selected year 2003 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2003
+
+📊 Extracting timing data for year: 2003...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2002
+PAGE LOG: Selected year 2002 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2002
+
+📊 Extracting timing data for year: 2002...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2001
+PAGE LOG: Selected year 2001 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2001
+
+📊 Extracting timing data for year: 2001...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 2000
+PAGE LOG: Selected year 2000 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 2000
+
+📊 Extracting timing data for year: 2000...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 1999
+PAGE LOG: Selected year 1999 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 1999
+
+📊 Extracting timing data for year: 1999...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 1998
+PAGE LOG: Selected year 1998 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 1998
+
+📊 Extracting timing data for year: 1998...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 1997
+PAGE LOG: Selected year 1997 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 1997
+
+📊 Extracting timing data for year: 1997...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 1996
+PAGE LOG: Selected year 1996 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 1996
+
+📊 Extracting timing data for year: 1996...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 1995
+PAGE LOG: Selected year 1995 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 1995
+
+📊 Extracting timing data for year: 1995...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+🔄 Changing to year: 1994
+PAGE LOG: Selected year 1994 using selector: select
+PAGE LOG: POST: https://securityapi.usaswimming.org/security/DataHubAuth/LogSisenseDataResults
+✅ Changed to year: 1994
+
+📊 Extracting timing data for year: 1994...
+PAGE LOG: Found 1 tables
+PAGE LOG: No data table found with EVENT/SWIM TIME headers
+PAGE LOG: Found 1 data rows
+PAGE LOG: Row 0: 1 cells
+✅ Extracted 0 timing records
+
+✅ Total records collected: 178
+📄 Data saved to: /Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/serena_tsao_1762109780956.json
+
+==================================================
+✅ Scraping completed successfully
+📄 Output file: /Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/serena_tsao_1762109780956.json
+📊 Total records: 178

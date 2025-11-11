@@ -31,6 +31,10 @@ class SwimTracker {
     async init() {
         try {
             this.updateStatus('Loading data...');
+
+            // Check authentication status
+            await this.checkAuthStatus();
+
             await this.loadData();
             await this.loadSwimmers();
             this.setupEventListeners();
@@ -227,6 +231,11 @@ class SwimTracker {
         // Update UI with loaded data
         this.updateUI();
         await this.renderCharts();
+
+        // Load coach feedback if parent is logged in
+        if (this.currentUser && this.currentUser.role === 'parent') {
+            await this.loadCoachFeedback();
+        }
 
         this.updateStatus('Ready');
     }
@@ -470,25 +479,24 @@ class SwimTracker {
         }
         const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
 
-        // Fetch ALL time standards for ALL age groups in ONE query
-        // Note: We need to match the course type from the filter
-        const courseType = this.filters.course === 'all' ? 'SCY' : this.filters.course;
-
+        // Fetch ALL time standards for ALL age groups and ALL course types
+        // We need this to correctly calculate standards for mixed SCY/LCM results
         const allTimeStandards = {};
         try {
             const { data: standards, error } = await this.supabase
                 .from('time_standards')
-                .select('age_group, event_name, b_standard, bb_standard, a_standard, aa_standard, aaa_standard, aaaa_standard')
-                .eq('gender', genderForDB)
-                .eq('course_type', courseType);
+                .select('age_group, event_name, course_type, b_standard, bb_standard, a_standard, aa_standard, aaa_standard, aaaa_standard')
+                .eq('gender', genderForDB);
 
             if (!error && standards) {
                 standards.forEach(std => {
-                    // Create nested structure: allTimeStandards[ageGroup][eventName]
+                    // Create nested structure: allTimeStandards[ageGroup][eventName_courseType]
                     if (!allTimeStandards[std.age_group]) {
                         allTimeStandards[std.age_group] = {};
                     }
-                    allTimeStandards[std.age_group][std.event_name] = {
+                    // Store with course type in key to differentiate SCY vs LCM vs SCM
+                    const key = `${std.event_name}_${std.course_type}`;
+                    allTimeStandards[std.age_group][key] = {
                         b: parseFloat(std.b_standard),
                         bb: parseFloat(std.bb_standard),
                         a: parseFloat(std.a_standard),
@@ -567,22 +575,43 @@ class SwimTracker {
                             Math.abs(r.time_seconds - currentTime) < 0.1
                         );
 
-                        // Determine next target standard
+                        // Get base event and course type
+                        const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
+                        const courseMatch = event.match(/\s+(SCY|LCM|SCM)$/);
+                        const courseType = courseMatch ? courseMatch[1] : 'SCY';
+                        const standardsKey = `${baseEvent}_${courseType}`;
+
+                        // Recalculate current standard based on current age
+                        const allCurrentStandards = allTimeStandards[currentAgeGroup] ? allTimeStandards[currentAgeGroup][standardsKey] : null;
+                        let currentStandard = null;
+                        if (allCurrentStandards) {
+                            const standardsToCheck = ['aaaa', 'aaa', 'aa', 'a', 'bb', 'b'];
+                            for (const stdLevel of standardsToCheck) {
+                                if (allCurrentStandards[stdLevel] && currentTime <= allCurrentStandards[stdLevel]) {
+                                    currentStandard = stdLevel.toUpperCase();
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Determine next target standard based on recalculated current standard
                         let targetStandard = null;
-                        if (!currentResult?.time_standard || currentResult.time_standard === 'B') {
+                        if (!currentStandard || currentStandard === 'B') {
                             targetStandard = 'BB';
-                        } else if (currentResult.time_standard === 'BB') {
+                        } else if (currentStandard === 'BB') {
                             targetStandard = 'A';
-                        } else if (currentResult.time_standard === 'A') {
+                        } else if (currentStandard === 'A') {
                             targetStandard = 'AA';
+                        } else if (currentStandard === 'AA') {
+                            targetStandard = 'AAA';
+                        } else if (currentStandard === 'AAA') {
+                            targetStandard = 'AAAA';
                         }
 
                         if (targetStandard) {
                             // Get target time from pre-fetched standards
-                            const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
-                            const standards = allTimeStandards[currentAgeGroup] ? allTimeStandards[currentAgeGroup][baseEvent] : null;
                             const standardKey = targetStandard.toLowerCase();
-                            const targetTime = standards ? standards[standardKey] : null;
+                            const targetTime = allCurrentStandards ? allCurrentStandards[standardKey] : null;
 
                             if (targetTime && targetTime < currentTime) {
                                 // Find intersection point between projection and target
@@ -619,7 +648,10 @@ class SwimTracker {
         const timeStandardMarkers = {};
         for (const [event, data] of Object.entries(eventGroups)) {
             const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
-            const standards = allTimeStandards[currentAgeGroup] ? allTimeStandards[currentAgeGroup][baseEvent] : null;
+            const courseMatch = event.match(/\s+(SCY|LCM|SCM)$/);
+            const courseType = courseMatch ? courseMatch[1] : 'SCY';
+            const standardsKey = `${baseEvent}_${courseType}`;
+            const standards = allTimeStandards[currentAgeGroup] ? allTimeStandards[currentAgeGroup][standardsKey] : null;
 
             if (standards) {
                 // Determine which standards to show based on current best time
@@ -777,15 +809,19 @@ class SwimTracker {
                     ageGroup = '11-12';
                 }
 
-                // Get the base event name (without course)
+                // Get the base event name (without course) and course type
                 const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
+                const courseMatch = event.match(/\s+(SCY|LCM|SCM)$/);
+                const courseType = courseMatch ? courseMatch[1] : 'SCY';
 
                 // Calculate the correct time standard by checking against each level
                 let calculatedStandard = null;
                 const timeSeconds = result.time_seconds;
 
                 // Check from best to worst: AAAA -> AAA -> AA -> A -> BB -> B
-                const standards = allTimeStandards[ageGroup] ? allTimeStandards[ageGroup][baseEvent] : null;
+                // Look up standards with course type included in key
+                const standardsKey = `${baseEvent}_${courseType}`;
+                const standards = allTimeStandards[ageGroup] ? allTimeStandards[ageGroup][standardsKey] : null;
 
                 if (standards) {
                     const standardsToCheck = ['aaaa', 'aaa', 'aa', 'a', 'bb', 'b'];
@@ -1460,108 +1496,132 @@ class SwimTracker {
             // Calculate expected improvement based on time elapsed
             const expectedImprovement = improvementPerMonth * monthsSinceLastSwim;
 
-            // Determine target standard
-            let targetStandard = null;
-            if (!result.time_standard || result.time_standard === 'B') {
-                targetStandard = 'BB';
-            } else if (result.time_standard === 'BB') {
-                targetStandard = 'A';
-            } else if (result.time_standard === 'A') {
-                targetStandard = 'AA';
+            // First, recalculate current standard based on swimmer's current age/gender
+            const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
+            const courseMatch = event.match(/\s+(SCY|LCM|SCM)$/);
+            const courseType = courseMatch ? courseMatch[1] : 'SCY';
+
+            let ageGroup = '10 & under';
+            if (this.currentSwimmer.current_age >= 13) {
+                ageGroup = '13-14';
+            } else if (this.currentSwimmer.current_age >= 11) {
+                ageGroup = '11-12';
             }
+            const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
 
-            if (targetStandard) {
-                try {
-                    const baseEvent = event.replace(/\s+(SCY|LCM|SCM)$/, '');
-                    let ageGroup = '10 & under';
-                    if (this.currentSwimmer.current_age >= 13) {
-                        ageGroup = '13-14';
-                    } else if (this.currentSwimmer.current_age >= 11) {
-                        ageGroup = '11-12';
+            // Fetch all standards for this event to determine current standard
+            try {
+                const { data: allStandards } = await this.supabase
+                    .from('time_standards')
+                    .select('b_standard, bb_standard, a_standard, aa_standard, aaa_standard, aaaa_standard')
+                    .eq('event_name', baseEvent)
+                    .eq('age_group', ageGroup)
+                    .eq('gender', genderForDB)
+                    .eq('course_type', courseType)
+                    .limit(1);
+
+                if (!allStandards || allStandards.length === 0) continue;
+
+                const standards = allStandards[0];
+                const timeSeconds = result.time_seconds;
+
+                // Determine current standard by checking which level this time achieves
+                let currentStandard = null;
+                const standardsToCheck = ['aaaa', 'aaa', 'aa', 'a', 'bb', 'b'];
+                for (const stdLevel of standardsToCheck) {
+                    const targetTime = standards[`${stdLevel}_standard`];
+                    if (targetTime && timeSeconds <= targetTime) {
+                        currentStandard = stdLevel.toUpperCase();
+                        break;
                     }
-
-                    const standardColumn = `${targetStandard.toLowerCase()}_standard`;
-                    const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
-
-                    const { data: standards } = await this.supabase
-                        .from('time_standards')
-                        .select(standardColumn)
-                        .eq('event_name', baseEvent)
-                        .eq('age_group', ageGroup)
-                        .eq('gender', genderForDB)
-                        .limit(1);
-
-                    if (standards && standards.length > 0 && standards[0][standardColumn]) {
-                        const targetTime = parseFloat(standards[0][standardColumn]);
-                        const gap = result.time_seconds - targetTime;
-                        const gapPercent = (gap / result.time_seconds) * 100;
-
-                        // Enhanced strategic priority scoring with timeline consideration
-                        let priority = 'Medium';
-                        let justification = '';
-                        let reasons = [];
-
-                        // Factor 1: Gap to next standard
-                        if (gapPercent < 2) {
-                            reasons.push(`very close to ${targetStandard} (${gapPercent.toFixed(1)}% gap)`);
-                        } else if (gapPercent < 5) {
-                            reasons.push(`close to ${targetStandard} (${gapPercent.toFixed(1)}% gap)`);
-                        } else if (gapPercent < 10) {
-                            reasons.push(`moderate gap to ${targetStandard} (${gapPercent.toFixed(1)}% gap)`);
-                        }
-
-                        // Factor 2: Time since last competition
-                        if (daysSinceLastSwim > 90) {
-                            reasons.push(`not tested in ${Math.floor(monthsSinceLastSwim)} months - validate progress`);
-                            priority = 'High'; // Boost priority for events needing testing
-                        } else if (daysSinceLastSwim > 60) {
-                            reasons.push(`last swum ${Math.floor(monthsSinceLastSwim)} months ago`);
-                        }
-
-                        // Factor 3: Expected improvement vs gap
-                        if (expectedImprovement > 0 && improvementPerMonth > 0.05) {
-                            const expectedTime = result.time_seconds - expectedImprovement;
-                            if (expectedTime <= targetTime) {
-                                reasons.push(`expected improvement suggests ${targetStandard} achievable now`);
-                                priority = 'High';
-                            } else {
-                                const remainingGap = expectedTime - targetTime;
-                                reasons.push(`expect ${this.formatTime(expectedImprovement)} improvement since last swim`);
-                            }
-                        }
-
-                        // Set base priority if not already high
-                        if (priority !== 'High') {
-                            if (gapPercent < 5 || (daysSinceLastSwim > 60 && improvementPerMonth > 0.05)) {
-                                priority = 'High';
-                            } else if (gapPercent < 10) {
-                                priority = 'Medium';
-                            } else {
-                                priority = 'Low';
-                            }
-                        }
-
-                        justification = reasons.join('; ') + '.';
-
-                        recommendations.push({
-                            event,
-                            currentTime: result.time_seconds,
-                            currentStandard: result.time_standard || 'B',
-                            targetStandard,
-                            targetTime,
-                            gap,
-                            gapPercent,
-                            priority,
-                            justification,
-                            lastSwimDate,
-                            daysSinceLastSwim,
-                            expectedImprovement,
-                            improvementPerMonth
-                        });
-                    }
-                } catch (err) {
-                    console.warn(`Could not analyze ${event}:`, err);
                 }
+
+                // Determine target standard based on recalculated current standard
+                let targetStandard = null;
+                if (!currentStandard || currentStandard === 'B') {
+                    targetStandard = 'BB';
+                } else if (currentStandard === 'BB') {
+                    targetStandard = 'A';
+                } else if (currentStandard === 'A') {
+                    targetStandard = 'AA';
+                } else if (currentStandard === 'AA') {
+                    targetStandard = 'AAA';
+                } else if (currentStandard === 'AAA') {
+                    targetStandard = 'AAAA';
+                }
+
+                if (targetStandard) {
+                    const targetTime = parseFloat(standards[`${targetStandard.toLowerCase()}_standard`]);
+                    if (!targetTime) continue;
+
+                    const gap = result.time_seconds - targetTime;
+                    const gapPercent = (gap / result.time_seconds) * 100;
+
+                    // Enhanced strategic priority scoring with timeline consideration
+                    let priority = 'Medium';
+                    let justification = '';
+                    let reasons = [];
+
+                    // Factor 1: Gap to next standard
+                    if (gapPercent < 2) {
+                        reasons.push(`very close to ${targetStandard} (${gapPercent.toFixed(1)}% gap)`);
+                    } else if (gapPercent < 5) {
+                        reasons.push(`close to ${targetStandard} (${gapPercent.toFixed(1)}% gap)`);
+                    } else if (gapPercent < 10) {
+                        reasons.push(`moderate gap to ${targetStandard} (${gapPercent.toFixed(1)}% gap)`);
+                    }
+
+                    // Factor 2: Time since last competition
+                    if (daysSinceLastSwim > 90) {
+                        reasons.push(`not tested in ${Math.floor(monthsSinceLastSwim)} months - validate progress`);
+                        priority = 'High'; // Boost priority for events needing testing
+                    } else if (daysSinceLastSwim > 60) {
+                        reasons.push(`last swum ${Math.floor(monthsSinceLastSwim)} months ago`);
+                    }
+
+                    // Factor 3: Expected improvement vs gap
+                    if (expectedImprovement > 0 && improvementPerMonth > 0.05) {
+                        const expectedTime = result.time_seconds - expectedImprovement;
+                        if (expectedTime <= targetTime) {
+                            reasons.push(`expected improvement suggests ${targetStandard} achievable now`);
+                            priority = 'High';
+                        } else {
+                            const remainingGap = expectedTime - targetTime;
+                            reasons.push(`expect ${this.formatTime(expectedImprovement)} improvement since last swim`);
+                        }
+                    }
+
+                    // Set base priority if not already high
+                    if (priority !== 'High') {
+                        if (gapPercent < 5 || (daysSinceLastSwim > 60 && improvementPerMonth > 0.05)) {
+                            priority = 'High';
+                        } else if (gapPercent < 10) {
+                            priority = 'Medium';
+                        } else {
+                            priority = 'Low';
+                        }
+                    }
+
+                    justification = reasons.join('; ') + '.';
+
+                    recommendations.push({
+                        event,
+                        currentTime: result.time_seconds,
+                        currentStandard: currentStandard || 'B',
+                        targetStandard,
+                        targetTime,
+                        gap,
+                        gapPercent,
+                        priority,
+                        justification,
+                        lastSwimDate,
+                        daysSinceLastSwim,
+                        expectedImprovement,
+                        improvementPerMonth
+                    });
+                }
+            } catch (err) {
+                console.warn(`Could not analyze ${event}:`, err);
             }
         }
 
@@ -2104,7 +2164,18 @@ class SwimTracker {
             .filter(t => t.swimmer_id === this.currentSwimmer.id)
             .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
-        if (teams.length === 0) return;
+        // Hide the entire My Journey section if no team data exists
+        const timelineSection = document.querySelector('.timeline-section');
+        if (teams.length === 0) {
+            if (timelineSection) {
+                timelineSection.style.display = 'none';
+            }
+            return;
+        } else {
+            if (timelineSection) {
+                timelineSection.style.display = 'block';
+            }
+        }
 
         // Calculate date ranges for each team
         const data = teams.map((team) => {
@@ -2246,6 +2317,108 @@ class SwimTracker {
     updateStatus(message) {
         const el = document.getElementById('dataStatus');
         if (el) el.textContent = message;
+    }
+
+    // ========================================================================
+    // AUTHENTICATION & PARENT FEEDBACK
+    // ========================================================================
+
+    async checkAuthStatus() {
+        try {
+            // Check if auth module is available
+            if (typeof window.AuthModule === 'undefined') {
+                console.log('Auth module not loaded');
+                return;
+            }
+
+            const session = await window.AuthModule.checkAuth();
+
+            if (session) {
+                // User is logged in
+                const userProfile = await window.AuthModule.getCurrentUserProfile();
+
+                if (userProfile && userProfile.profile) {
+                    this.currentUser = userProfile.profile;
+
+                    // Update UI
+                    const authButtons = document.getElementById('authButtons');
+                    const userMenu = document.getElementById('userMenu');
+                    const userName = document.getElementById('userName');
+
+                    if (authButtons) authButtons.style.display = 'none';
+                    if (userMenu) userMenu.style.display = 'flex';
+                    if (userName) userName.textContent = userProfile.profile.full_name;
+
+                    // Show feedback section for parents
+                    if (userProfile.profile.role === 'parent') {
+                        const feedbackSection = document.getElementById('coachFeedbackSection');
+                        if (feedbackSection) {
+                            feedbackSection.style.display = 'block';
+                        }
+
+                        // Load feedback when swimmer is selected
+                        if (this.currentSwimmer) {
+                            await this.loadCoachFeedback();
+                        }
+                    }
+
+                    console.log('User logged in:', userProfile.profile.full_name, '(' + userProfile.profile.role + ')');
+                }
+            } else {
+                // User is not logged in - show public view only
+                const authButtons = document.getElementById('authButtons');
+                const userMenu = document.getElementById('userMenu');
+
+                if (authButtons) authButtons.style.display = 'block';
+                if (userMenu) userMenu.style.display = 'none';
+
+                console.log('No user session - showing public view');
+            }
+        } catch (error) {
+            console.error('Error checking auth status:', error);
+        }
+    }
+
+    async loadCoachFeedback() {
+        try {
+            // Ensure parent view module is loaded
+            if (typeof window.ParentViewModule === 'undefined') {
+                console.error('Parent view module not loaded');
+                return;
+            }
+
+            // Check if current user is a parent with access to this swimmer
+            if (!this.currentUser || this.currentUser.role !== 'parent') {
+                return;
+            }
+
+            if (!this.currentSwimmer) {
+                return;
+            }
+
+            // Check if parent has access to this swimmer
+            if (!this.currentUser.linked_swimmer_ids.includes(this.currentSwimmer.id)) {
+                console.log('Parent does not have access to this swimmer');
+                const feedbackSection = document.getElementById('coachFeedbackSection');
+                if (feedbackSection) {
+                    feedbackSection.style.display = 'none';
+                }
+                return;
+            }
+
+            // Show feedback section
+            const feedbackSection = document.getElementById('coachFeedbackSection');
+            if (feedbackSection) {
+                feedbackSection.style.display = 'block';
+            }
+
+            // Initialize and load feedback
+            await window.ParentViewModule.initParentView(this.currentSwimmer.id, this.currentUser);
+
+            console.log('Coach feedback loaded for swimmer:', this.currentSwimmer.full_name);
+        } catch (error) {
+            console.error('Error loading coach feedback:', error);
+        }
     }
 }
 

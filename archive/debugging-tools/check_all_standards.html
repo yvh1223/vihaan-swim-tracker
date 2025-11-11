@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Check All Time Standards</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Time Standards Validation</h1>
+    <pre id="output">Loading...</pre>
+
+    <script>
+        async function checkStandards() {
+            const output = document.getElementById('output');
+            const supabase = window.supabase.createClient(
+                'https://gwqwpicbtkamojwwlmlp.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s'
+            );
+
+            // Get all time standards
+            const { data: standards } = await supabase
+                .from('time_standards')
+                .select('*')
+                .order('gender')
+                .order('age_group')
+                .order('event_name')
+                .order('course_type');
+
+            output.textContent = `Total Standards: ${standards.length}\n\n`;
+            output.textContent += 'Checking for inverted standards (where B < AAAA)...\n';
+            output.textContent += '='.repeat(100) + '\n\n';
+
+            let invertedCount = 0;
+            let correctCount = 0;
+
+            standards.forEach(std => {
+                const b = parseFloat(std.b_standard);
+                const bb = parseFloat(std.bb_standard);
+                const a = parseFloat(std.a_standard);
+                const aa = parseFloat(std.aa_standard);
+                const aaa = parseFloat(std.aaa_standard);
+                const aaaa = parseFloat(std.aaaa_standard);
+
+                // Standards should be: B > BB > A > AA > AAA > AAAA (slower to faster)
+                const isCorrect = b > bb && bb > a && a > aa && aa > aaa && aaa > aaaa;
+                const isInverted = b < bb && bb < a && a < aa && aa < aaa && aaa < aaaa;
+
+                if (isInverted) {
+                    invertedCount++;
+                    output.textContent += `❌ INVERTED: ${std.gender} ${std.age_group} ${std.event_name} ${std.course_type}\n`;
+                    output.textContent += `   B=${b}s < BB=${bb}s < A=${a}s < AA=${aa}s < AAA=${aaa}s < AAAA=${aaaa}s\n\n`;
+                } else if (!isCorrect) {
+                    output.textContent += `⚠️  INCONSISTENT: ${std.gender} ${std.age_group} ${std.event_name} ${std.course_type}\n`;
+                    output.textContent += `   B=${b}s, BB=${bb}s, A=${a}s, AA=${aa}s, AAA=${aaa}s, AAAA=${aaaa}s\n\n`;
+                } else {
+                    correctCount++;
+                }
+            });
+
+            output.textContent += '\n' + '='.repeat(100) + '\n';
+            output.textContent += `✅ Correct: ${correctCount}\n`;
+            output.textContent += `❌ Inverted: ${invertedCount}\n`;
+            output.textContent += `Total Checked: ${standards.length}\n`;
+        }
+
+        checkStandards();
+    </script>
+</body>
+</html>

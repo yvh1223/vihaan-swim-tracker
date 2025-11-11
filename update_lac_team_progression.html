@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update LAC Team Progression</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; padding: 20px; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; margin: 10px 5px; }
+        button:hover { background: #45a049; }
+        .result { margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; white-space: pre-wrap; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #4CAF50; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Update LAC Team Progression for 6 Swimmers</h1>
+
+    <p><strong>Swimmers to Update:</strong></p>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Gender</th>
+            <th>Current Team</th>
+            <th>Target Team</th>
+        </tr>
+        <tr><td>21</td><td>Parker Li</td><td>Boys</td><td>Lakeside Aquatic Club</td><td>LAC - Gold I Swim Team</td></tr>
+        <tr><td>22</td><td>Scarlett Mann</td><td>Girls</td><td>Lakeside Aquatic Club</td><td>LAC - Gold I Swim Team</td></tr>
+        <tr><td>23</td><td>Kiaan Patel</td><td>Boys</td><td>Lakeside Aquatic Club</td><td>LAC - Gold I Swim Team</td></tr>
+        <tr><td>24</td><td>Brooke Long</td><td>Girls</td><td>Lakeside Aquatic Club</td><td>LAC - Gold I Swim Team</td></tr>
+        <tr><td>25</td><td>Jason Ma</td><td>Boys</td><td>Lakeside Aquatic Club</td><td>LAC - Gold I Swim Team</td></tr>
+        <tr><td>26</td><td>William Power</td><td>Boys</td><td>Lakeside Aquatic Club</td><td>LAC - Gold I Swim Team</td></tr>
+    </table>
+
+    <button onclick="checkCurrentTeamProgression()">1. Check Current Team Progression</button>
+    <button onclick="getDateRanges()">2. Get Date Ranges from Competition Results</button>
+    <button onclick="insertTeamProgressionRecords()">3. Insert Team Progression Records</button>
+    <button onclick="verifyUpdate()">4. Verify Update</button>
+
+    <div id="result" class="result"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://gwqwpicbtkamojwwlmlp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const swimmerIds = [21, 22, 23, 24, 25, 26];
+        const swimmerNames = {
+            21: 'Parker Li',
+            22: 'Scarlett Mann',
+            23: 'Kiaan Patel',
+            24: 'Brooke Long',
+            25: 'Jason Ma',
+            26: 'William Power'
+        };
+
+        let dateRanges = {};
+
+        async function checkCurrentTeamProgression() {
+            const result = document.getElementById('result');
+            result.className = 'result';
+            result.textContent = 'Checking current team progression...';
+
+            try {
+                const { data, error } = await supabase
+                    .from('team_progression')
+                    .select('*')
+                    .in('swimmer_id', swimmerIds)
+                    .order('swimmer_id')
+                    .order('start_date');
+
+                if (error) throw error;
+
+                result.className = 'result success';
+                result.textContent = `Found ${data.length} team progression records:\n\n` +
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function getDateRanges() {
+            const result = document.getElementById('result');
+            result.className = 'result';
+            result.textContent = 'Getting date ranges from competition results...';
+
+            try {
+                dateRanges = {};
+
+                for (const swimmerId of swimmerIds) {
+                    const { data, error } = await supabase
+                        .from('competition_results')
+                        .select('event_date')
+                        .eq('swimmer_id', swimmerId)
+                        .order('event_date');
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        const dates = data.map(r => r.event_date);
+                        dateRanges[swimmerId] = {
+                            name: swimmerNames[swimmerId],
+                            start_date: dates[0],
+                            end_date: dates[dates.length - 1],
+                            record_count: dates.length
+                        };
+                    }
+                }
+
+                result.className = 'result success';
+                result.textContent = 'Date ranges for swimmers:\n\n' +
+                    JSON.stringify(dateRanges, null, 2);
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function insertTeamProgressionRecords() {
+            const result = document.getElementById('result');
+            result.className = 'result';
+            result.textContent = 'Inserting team progression records...';
+
+            if (Object.keys(dateRanges).length === 0) {
+                result.className = 'result error';
+                result.textContent = 'Error: Please run "Get Date Ranges" first!';
+                return;
+            }
+
+            try {
+                const records = [];
+                for (const swimmerId of swimmerIds) {
+                    if (dateRanges[swimmerId]) {
+                        records.push({
+                            swimmer_id: swimmerId,
+                            team_name: 'LAC - Gold I Swim Team',
+                            start_date: dateRanges[swimmerId].start_date,
+                            end_date: null // Current team
+                        });
+                    }
+                }
+
+                const { data, error } = await supabase
+                    .from('team_progression')
+                    .insert(records)
+                    .select();
+
+                if (error) throw error;
+
+                result.className = 'result success';
+                result.textContent = `Successfully inserted ${data.length} team progression records:\n\n` +
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function verifyUpdate() {
+            const result = document.getElementById('result');
+            result.className = 'result';
+            result.textContent = 'Verifying update...';
+
+            try {
+                // Check team_progression
+                const { data: teamData, error: teamError } = await supabase
+                    .from('team_progression')
+                    .select('swimmer_id, team_name, start_date, end_date')
+                    .in('swimmer_id', swimmerIds)
+                    .order('swimmer_id');
+
+                if (teamError) throw teamError;
+
+                // Check swimmers current_team
+                const { data: swimmerData, error: swimmerError } = await supabase
+                    .from('swimmers')
+                    .select('id, full_name, current_team')
+                    .in('id', swimmerIds)
+                    .order('id');
+
+                if (swimmerError) throw swimmerError;
+
+                result.className = 'result success';
+                result.textContent = 'Verification Results:\n\n' +
+                    '=== TEAM PROGRESSION ===\n' +
+                    JSON.stringify(teamData, null, 2) + '\n\n' +
+                    '=== SWIMMERS CURRENT_TEAM ===\n' +
+                    JSON.stringify(swimmerData, null, 2);
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

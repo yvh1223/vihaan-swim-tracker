@@ -1,0 +1,57 @@
+[
+  {
+    "swimmer": {
+      "firstName": "Emie Sinh",
+      "lastName": "DiBrito"
+    },
+    "success": false,
+    "recordCount": 0,
+    "filepath": null,
+    "error": "Navigation failed",
+    "timestamp": "2025-11-02T22:35:55.278Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Vivian",
+      "lastName": "Habern"
+    },
+    "success": true,
+    "recordCount": 178,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Vivian_Habern_1762122999080.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:36:39.154Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Kiaan Devang",
+      "lastName": "Patel"
+    },
+    "success": false,
+    "recordCount": 0,
+    "filepath": null,
+    "error": "Navigation failed",
+    "timestamp": "2025-11-02T22:36:55.030Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Vivienne Noelle",
+      "lastName": "Suhor"
+    },
+    "success": false,
+    "recordCount": 0,
+    "filepath": null,
+    "error": "Navigation failed",
+    "timestamp": "2025-11-02T22:37:10.105Z"
+  },
+  {
+    "swimmer": {
+      "firstName": "Darren Da",
+      "lastName": "Xu"
+    },
+    "success": true,
+    "recordCount": 210,
+    "filepath": "/Users/yhuchchannavar/Documents/vihaan-swim-tracker/scripts/scraped_data/Darren Da_Xu_1762123073543.json",
+    "error": null,
+    "timestamp": "2025-11-02T22:37:53.625Z"
+  }
+]

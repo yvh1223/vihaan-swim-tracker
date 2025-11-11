@@ -1,0 +1,62 @@
+[
+  {
+    "firstName": "Parker",
+    "lastName": "Li",
+    "gender": "Boys",
+    "recordCount": 228,
+    "uniqueRecordsLoaded": 111,
+    "status": "completed",
+    "swimmerId": 21,
+    "scrapedFile": "Parker_Li_1762133757856.json"
+  },
+  {
+    "firstName": "Scarlett",
+    "lastName": "Mann",
+    "gender": "Girls",
+    "recordCount": 190,
+    "uniqueRecordsLoaded": 94,
+    "status": "completed",
+    "swimmerId": 22,
+    "scrapedFile": "Scarlett_Mann_1762133799612.json"
+  },
+  {
+    "firstName": "Kiaan",
+    "lastName": "Patel",
+    "gender": "Boys",
+    "recordCount": 108,
+    "uniqueRecordsLoaded": 54,
+    "status": "completed",
+    "swimmerId": 23,
+    "scrapedFile": "Kiaan_Patel_1762133841592.json"
+  },
+  {
+    "firstName": "Brooke",
+    "lastName": "Long",
+    "gender": "Girls",
+    "recordCount": 204,
+    "uniqueRecordsLoaded": 102,
+    "status": "completed",
+    "swimmerId": 24,
+    "scrapedFile": "Brooke_Long_1762134577033.json"
+  },
+  {
+    "firstName": "Jason",
+    "lastName": "Ma",
+    "gender": "Boys",
+    "recordCount": 80,
+    "uniqueRecordsLoaded": 38,
+    "status": "completed",
+    "swimmerId": 25,
+    "scrapedFile": "Jason_Ma_1762134631036.json"
+  },
+  {
+    "firstName": "William",
+    "lastName": "Power",
+    "gender": "Boys",
+    "recordCount": 180,
+    "uniqueRecordsLoaded": 85,
+    "status": "completed",
+    "swimmerId": 26,
+    "scrapedFile": "William_Power_1762136882213.json"
+  }
+]

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fix Inverted Standards</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Fix Inverted Time Standards</h1>
+    <button id="checkBtn" onclick="checkOnly()">1. Check Only (No Changes)</button>
+    <button id="fixBtn" onclick="fixStandards()" style="margin-left: 20px; background: red; color: white;">2. FIX DATABASE (Use Service Role Key)</button>
+    <pre id="output">Click "Check Only" to see what needs to be fixed...</pre>
+
+    <script>
+        const SUPABASE_URL = 'https://gwqwpicbtkamojwwlmlp.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyODk3MzAsImV4cCI6MjA3NTg2NTczMH0.5KiCESGV2zzSmhpwDmJ3TsCwdqyCQXntgTGhWkuV27s';
+
+        async function checkOnly() {
+            const output = document.getElementById('output');
+            output.textContent = 'Checking standards...\n\n';
+
+            const supabase = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
+
+            const { data: standards } = await supabase
+                .from('time_standards')
+                .select('*')
+                .order('gender')
+                .order('age_group');
+
+            let girlsInverted = 0;
+            let girlsCorrect = 0;
+            let boysInverted = 0;
+            let boysCorrect = 0;
+
+            const toFix = [];
+
+            standards.forEach(std => {
+                const b = parseFloat(std.b_standard);
+                const aaaa = parseFloat(std.aaaa_standard);
+                const isInverted = b < aaaa; // B should be slower (higher) than AAAA
+
+                if (std.gender === 'Girls') {
+                    if (isInverted) {
+                        girlsInverted++;
+                        toFix.push(std);
+                    } else {
+                        girlsCorrect++;
+                    }
+                } else {
+                    if (isInverted) {
+                        boysInverted++;
+                        toFix.push(std);
+                    } else {
+                        boysCorrect++;
+                    }
+                }
+            });
+
+            output.textContent += `Girls Standards:\n`;
+            output.textContent += `  ✅ Correct: ${girlsCorrect}\n`;
+            output.textContent += `  ❌ Inverted: ${girlsInverted}\n\n`;
+            output.textContent += `Boys Standards:\n`;
+            output.textContent += `  ✅ Correct: ${boysCorrect}\n`;
+            output.textContent += `  ❌ Inverted: ${boysInverted}\n\n`;
+            output.textContent += `Total to fix: ${toFix.length}\n\n`;
+
+            if (toFix.length > 0) {
+                output.textContent += 'Sample records to fix:\n';
+                toFix.slice(0, 5).forEach(std => {
+                    output.textContent += `  ${std.gender} ${std.age_group} ${std.event_name} ${std.course_type}\n`;
+                    output.textContent += `    Current: B=${std.b_standard}s < AAAA=${std.aaaa_standard}s\n`;
+                    output.textContent += `    Fixed:   B=${std.aaaa_standard}s > AAAA=${std.b_standard}s\n\n`;
+                });
+            }
+
+            window.toFixData = toFix;
+        }
+
+        async function fixStandards() {
+            if (!window.toFixData || window.toFixData.length === 0) {
+                alert('Please run "Check Only" first!');
+                return;
+            }
+
+            // Use the service role key directly (this page is local-only)
+            const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cXdwaWNidGthbW9qd3dsbWxwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDI4OTczMCwiZXhwIjoyMDc1ODY1NzMwfQ.yeogkX6imUHwudhlaIDpsAZzhwEXO8uuegTdrFKEZoA';
+
+            const output = document.getElementById('output');
+            output.textContent = 'Fixing standards...\n\n';
+
+            const supabase = window.supabase.createClient(SUPABASE_URL, serviceRoleKey);
+
+            let fixed = 0;
+            let errors = 0;
+
+            for (const std of window.toFixData) {
+                try {
+                    // Swap all the standards
+                    const { error } = await supabase
+                        .from('time_standards')
+                        .update({
+                            b_standard: std.aaaa_standard,
+                            bb_standard: std.aaa_standard,
+                            a_standard: std.aa_standard,
+                            aa_standard: std.a_standard,
+                            aaa_standard: std.bb_standard,
+                            aaaa_standard: std.b_standard
+                        })
+                        .eq('id', std.id);
+
+                    if (error) {
+                        output.textContent += `❌ Error: ${std.gender} ${std.age_group} ${std.event_name} ${std.course_type}: ${error.message}\n`;
+                        errors++;
+                    } else {
+                        fixed++;
+                        if (fixed % 50 === 0) {
+                            output.textContent += `✅ Fixed ${fixed}/${window.toFixData.length}...\n`;
+                        }
+                    }
+                } catch (err) {
+                    output.textContent += `❌ Exception: ${err.message}\n`;
+                    errors++;
+                }
+            }
+
+            output.textContent += '\n' + '='.repeat(80) + '\n';
+            output.textContent += `✅ Fixed: ${fixed}\n`;
+            output.textContent += `❌ Errors: ${errors}\n`;
+            output.textContent += `Total: ${window.toFixData.length}\n`;
+        }
+    </script>
+</body>
+</html>
