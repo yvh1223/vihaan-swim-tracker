@@ -51,8 +51,21 @@ node_modules/
 .env.production.local
 
 # Claude AI files - do not commit
-CLAUDE.md
 *.claude.*
 
 # Playwright MCP
 .playwright-mcp
+
+# Scraped data and generated files (too large)
+scripts/scraped_data/*.json
+scripts/screenshots/*.png
+scripts/sql_by_swimmer/*.sql
+scripts/load_all_swimmers.sql
+scripts/logs/
+scripts/reports/
+
+# Python virtual environment
+venv/
+
+# Archive folder
+archive/

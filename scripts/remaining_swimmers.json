@@ -1,0 +1,18 @@
+[
+  {"firstName": "Asa", "lastName": "Davidson", "gender": "Boys", "swimmerId": 9},
+  {"firstName": "Audrey", "lastName": "Gerard", "gender": "Boys", "swimmerId": 12},
+  {"firstName": "Austin", "lastName": "Deng", "gender": "Boys", "swimmerId": 10},
+  {"firstName": "Darren", "lastName": "Xu", "gender": "Boys", "swimmerId": 20},
+  {"firstName": "Eileen", "lastName": "Zheng", "gender": "Boys", "swimmerId": 15},
+  {"firstName": "Emie", "lastName": "Dibrito", "gender": "Boys", "swimmerId": 17},
+  {"firstName": "Finley", "lastName": "Payne", "gender": "Boys", "swimmerId": 13},
+  {"firstName": "Jeremy", "lastName": "Ting", "gender": "Boys", "swimmerId": 19},
+  {"firstName": "Mia", "lastName": "Abareta", "gender": "Boys", "swimmerId": 8},
+  {"firstName": "Nathanel", "lastName": "Gelbman", "gender": "Boys", "swimmerId": 11},
+  {"firstName": "Parker", "lastName": "Sprawls", "gender": "Boys", "swimmerId": 14},
+  {"firstName": "Serena", "lastName": "Tsao", "gender": "Boys", "swimmerId": 7},
+  {"firstName": "Swara", "lastName": "Chitre", "gender": "Girls", "swimmerId": 3},
+  {"firstName": "Vihaan", "lastName": "Huchchannavar", "gender": "Boys", "swimmerId": 1},
+  {"firstName": "Vivian", "lastName": "Habern", "gender": "Boys", "swimmerId": 16},
+  {"firstName": "Vivienne", "lastName": "Suhor", "gender": "Boys", "swimmerId": 18}
+]
