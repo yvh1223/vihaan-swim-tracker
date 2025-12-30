@@ -228,8 +228,8 @@ class SwimTracker {
         // Load data for this swimmer
         await this.loadData();
 
-        // Update UI with loaded data
-        this.updateUI();
+        // Update UI with loaded data (recalculates standards for current age)
+        await this.updateUI();
         await this.renderCharts();
 
         // Load coach feedback if parent is logged in
@@ -240,7 +240,7 @@ class SwimTracker {
         this.updateStatus('Ready');
     }
 
-    updateUI() {
+    async updateUI() {
         if (!this.currentSwimmer) return;
 
         // Update team logo
@@ -253,7 +253,7 @@ class SwimTracker {
             logoEl.textContent = `${teamName} Swim Team`;
         }
 
-        // Update stats - COUNT ONLY BEST TIME PER EVENT
+        // Update stats - COUNT ONLY BEST TIME PER EVENT with CURRENT age group standards
         const swimmerResults = this.results.filter(r => r.swimmer_id === this.currentSwimmer.id);
 
         // Get best time per event (fastest time only)
@@ -265,11 +265,76 @@ class SwimTracker {
             }
         });
 
-        // Count distinct events by their BEST standard achieved
         const bestTimes = Object.values(eventBests);
-        const aCount = bestTimes.filter(r => r.time_standard === 'A' || r.time_standard === 'AA' || r.time_standard === 'AAA' || r.time_standard === 'AAAA').length;
-        const bbCount = bestTimes.filter(r => r.time_standard === 'BB').length;
-        const bCount = bestTimes.filter(r => r.time_standard === 'B').length;
+
+        // Recalculate standards based on CURRENT age group
+        const currentAge = this.currentSwimmer.current_age;
+        let ageGroup = '10 & under';
+        if (currentAge >= 13) {
+            ageGroup = '13-14';
+        } else if (currentAge >= 11) {
+            ageGroup = '11-12';
+        }
+        const genderForDB = this.currentSwimmer.gender === 'F' || this.currentSwimmer.gender === 'Girls' ? 'Girls' : 'Boys';
+
+        // Fetch time standards for current age group
+        const recalculatedStandards = {};
+        try {
+            const { data: standards, error } = await this.supabase
+                .from('time_standards')
+                .select('event_name, course_type, b_standard, bb_standard, a_standard, aa_standard, aaa_standard, aaaa_standard')
+                .eq('gender', genderForDB)
+                .eq('age_group', ageGroup);
+
+            if (!error && standards) {
+                standards.forEach(std => {
+                    const key = `${std.event_name}_${std.course_type}`;
+                    recalculatedStandards[key] = {
+                        b: parseFloat(std.b_standard),
+                        bb: parseFloat(std.bb_standard),
+                        a: parseFloat(std.a_standard),
+                        aa: parseFloat(std.aa_standard),
+                        aaa: parseFloat(std.aaa_standard),
+                        aaaa: parseFloat(std.aaaa_standard)
+                    };
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching time standards for stats:', error);
+        }
+
+        // Recalculate current standard for each best time
+        bestTimes.forEach(result => {
+            const baseEvent = result.event_name.replace(/\s+(SCY|LCM|SCM)$/, '');
+            const courseMatch = result.event_name.match(/\s+(SCY|LCM|SCM)$/);
+            const courseType = courseMatch ? courseMatch[1] : 'SCY';
+            const key = `${baseEvent}_${courseType}`;
+
+            const standards = recalculatedStandards[key];
+            if (standards) {
+                const timeSeconds = result.time_seconds;
+                result.current_standard = null;
+
+                // Check standards from fastest to slowest
+                const standardsToCheck = ['aaaa', 'aaa', 'aa', 'a', 'bb', 'b'];
+                for (const stdLevel of standardsToCheck) {
+                    if (standards[stdLevel] && timeSeconds <= standards[stdLevel]) {
+                        result.current_standard = stdLevel.toUpperCase();
+                        break;
+                    }
+                }
+            } else {
+                result.current_standard = result.time_standard; // fallback to stored value
+            }
+        });
+
+        // Count distinct events by their RECALCULATED standard for current age
+        const aCount = bestTimes.filter(r => {
+            const std = r.current_standard || r.time_standard;
+            return std === 'A' || std === 'AA' || std === 'AAA' || std === 'AAAA';
+        }).length;
+        const bbCount = bestTimes.filter(r => (r.current_standard || r.time_standard) === 'BB').length;
+        const bCount = bestTimes.filter(r => (r.current_standard || r.time_standard) === 'B').length;
         const uniqueEvents = bestTimes.length;
 
         this.updateStat('aCount', aCount);
@@ -277,7 +342,7 @@ class SwimTracker {
         this.updateStat('bCount', bCount);
         this.updateStat('totalEvents', uniqueEvents);
 
-        // Update records table with best times
+        // Update records table with best times (use recalculated standards)
         this.renderRecordsTable(bestTimes);
     }
 
@@ -304,10 +369,12 @@ class SwimTracker {
 
         const records = Object.values(eventBests)
             .sort((a, b) => {
-                // Sort by standard (best first), then by event name
+                // Sort by recalculated standard (best first), then by event name
                 const standardOrder = { 'AAAA': 0, 'AAA': 1, 'AA': 2, 'A': 3, 'BB': 4, 'B': 5 };
-                const aOrder = standardOrder[a.time_standard] ?? 99;
-                const bOrder = standardOrder[b.time_standard] ?? 99;
+                const aStd = a.current_standard || a.time_standard;
+                const bStd = b.current_standard || b.time_standard;
+                const aOrder = standardOrder[aStd] ?? 99;
+                const bOrder = standardOrder[bStd] ?? 99;
                 if (aOrder !== bOrder) return aOrder - bOrder;
                 return a.event_name.localeCompare(b.event_name);
             });
@@ -316,7 +383,8 @@ class SwimTracker {
         let html = '';
 
         records.forEach(record => {
-            const std = record.time_standard || 'Other';
+            // Use recalculated standard if available, fallback to stored standard
+            const std = record.current_standard || record.time_standard || 'Other';
             html += `
                 <div class="best-time-row">
                     <span class="best-time-event">${record.event_name}</span>
