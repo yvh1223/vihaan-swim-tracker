@@ -226,6 +226,12 @@ class SwimTracker {
         this.currentSwimmer = this.swimmers.find(s => s.id === swimmerId);
         if (!this.currentSwimmer) return;
 
+        // Update dropdown to show selected swimmer
+        const select = document.getElementById('swimmerSelect');
+        if (select) {
+            select.value = swimmerId;
+        }
+
         this.updateStatus('Loading swimmer data...');
 
         // Load data for this swimmer
