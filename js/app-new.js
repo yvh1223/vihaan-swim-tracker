@@ -71,7 +71,10 @@ class SwimTracker {
             this.populateSwimmerSelect();
 
             if (this.swimmers.length > 0) {
-                this.selectSwimmer(this.swimmers[0].id);
+                // Default to Vihaan Huchchannavar, fallback to first swimmer
+                const vihaan = this.swimmers.find(s => s.full_name === 'Vihaan Huchchannavar');
+                const defaultSwimmer = vihaan || this.swimmers[0];
+                this.selectSwimmer(defaultSwimmer.id);
             }
         } catch (error) {
             console.error('Error loading swimmers:', error);
